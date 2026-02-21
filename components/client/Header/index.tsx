@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '../Button';
 import { BrandLogo } from '../BrandLogo';
 
 export const Header: React.FC = () => {
@@ -47,16 +46,16 @@ export const Header: React.FC = () => {
             ))}
             
             <Link to="/manage-booking" onClick={() => window.scrollTo(0, 0)}>
-              <Button variant="secondary" className="py-2 px-4 text-sm">
+              <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                 Manage Booking
-              </Button>
+              </button>
             </Link>
 
             {!isBookingPage && (
               <Link to="/book" onClick={() => window.scrollTo(0, 0)}>
-                <Button variant="primary" className="py-2 px-4 text-sm">
+                <button className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors cursor-pointer">
                   Book Parking
-                </Button>
+                </button>
               </Link>
             )}
           </nav>
@@ -87,15 +86,15 @@ export const Header: React.FC = () => {
           ))}
            
            <Link to="/manage-booking" onClick={handleNavClick}>
-            <Button variant="secondary" fullWidth>
+            <button className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               Manage Booking
-            </Button>
+            </button>
           </Link>
 
            <Link to="/book" onClick={handleNavClick}>
-            <Button variant="primary" fullWidth>
+            <button className="w-full px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors cursor-pointer">
               Book Parking
-            </Button>
+            </button>
           </Link>
         </div>
       )}
