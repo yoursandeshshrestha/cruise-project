@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../../../lib/utils';
 import { useAdminSidebar } from '../../../contexts/AdminSidebarContext';
 import { useAuthStore } from '../../../stores/authStore';
+import { useNotificationsStore } from '../../../stores/notificationsStore';
 
 interface NavItem {
   title: string;
@@ -49,6 +50,16 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'Support',
+    items: [
+      {
+        title: 'Contact Submissions',
+        href: '/admin/contact-submissions',
+        iconSrc: '/icons/contact.svg',
+      },
+    ],
+  },
+  {
     label: 'Configuration',
     items: [
       {
@@ -76,13 +87,18 @@ const navGroups: NavGroup[] = [
         href: '/admin/pricing',
         iconSrc: '/icons/money.svg',
       },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
       {
         title: 'Admin Users',
         href: '/admin/users',
         iconSrc: '/icons/admin-users.svg',
       },
       {
-        title: 'Platform Config',
+        title: 'Settings',
         href: '/admin/configuration',
         iconSrc: '/icons/platform-configration.svg',
       },
@@ -95,10 +111,30 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const { isCollapsed } = useAdminSidebar();
   const { signOut } = useAuthStore();
+  const { arrivalsCount, newContactSubmissionsCount, initialize, cleanup } = useNotificationsStore();
+
+  useEffect(() => {
+    initialize();
+    return () => {
+      cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/admin/login');
+  };
+
+  // Add badge counts to nav items
+  const getNavItemBadge = (href: string): string | undefined => {
+    if (href === '/admin/arrivals' && arrivalsCount > 0) {
+      return arrivalsCount.toString();
+    }
+    if (href === '/admin/contact-submissions' && newContactSubmissionsCount > 0) {
+      return newContactSubmissionsCount.toString();
+    }
+    return undefined;
   };
 
   return (
@@ -183,6 +219,7 @@ export const Sidebar: React.FC = () => {
               <div className="space-y-0.5 px-2">
                 {group.items.map((item) => {
                   const isActive = location.pathname === item.href;
+                  const badge = getNavItemBadge(item.href) || item.badge;
                   return (
                     <Link
                       key={item.href}
@@ -195,21 +232,26 @@ export const Sidebar: React.FC = () => {
                         isCollapsed ? 'justify-center px-2' : 'pl-2'
                       )}
                     >
-                      <div className="shrink-0">
+                      <div className="shrink-0 relative">
                         {item.iconSrc ? (
                           <img src={item.iconSrc} alt={item.title} className="size-4" />
                         ) : item.icon ? (
                           <item.icon className="size-4" />
                         ) : null}
+                        {isCollapsed && badge && (
+                          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white w-4 h-4 text-[10px] font-bold">
+                            {badge}
+                          </span>
+                        )}
                       </div>
                       {!isCollapsed && (
                         <>
                           <span className="flex-1 truncate transition-[letter-spacing] duration-150 group-hover:tracking-wide">
                             {item.title}
                           </span>
-                          {item.badge && (
-                            <span className="inline-flex items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground px-1.5 py-0.5 text-xs font-medium">
-                              {item.badge}
+                          {badge && (
+                            <span className="inline-flex items-center justify-center rounded-full bg-red-500 text-white px-2 py-0.5 text-xs font-medium min-w-[20px]">
+                              {badge}
                             </span>
                           )}
                         </>

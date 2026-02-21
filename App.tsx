@@ -31,6 +31,7 @@ import { Analytics } from './pages/admin/Analytics';
 import { Settings } from './pages/admin/Settings';
 import { Account } from './pages/admin/Account';
 import { AdminUsers } from './pages/admin/AdminUsers';
+import { ContactSubmissions } from './pages/admin/ContactSubmissions';
 import { Toaster } from './components/admin/ui/sonner';
 import { useAuthInit } from './hooks/useAuthInit';
 import { MaintenancePage } from './components/client/MaintenancePage';
@@ -191,6 +192,14 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/contact-submissions"
+          element={
+            <ProtectedRoute>
+              <ContactSubmissions />
             </ProtectedRoute>
           }
         />
