@@ -69,15 +69,21 @@ export const AdminDashboard: React.FC = () => {
     };
   }, [bookings]);
 
-  // Recent bookings (last 10)
+  // Recent bookings (last 5)
   const recentBookings = useMemo(() => {
     return [...bookings]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 10);
+      .slice(0, 5);
   }, [bookings]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'pending':
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-100">
+            Pending
+          </Badge>
+        );
       case 'confirmed':
         return (
           <Badge className="bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-100">

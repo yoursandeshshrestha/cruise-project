@@ -139,18 +139,18 @@ export const BookingDetail: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-100';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-100';
-      case 'checked_in':
+      case 'confirmed':
         return 'bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-100';
+      case 'checked_in':
+        return 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-100';
       case 'completed':
-        return 'bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-100';
+        return 'bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-100';
       case 'cancelled':
         return 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-100';
       default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-100';
+        return 'bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-100';
     }
   };
 
@@ -219,6 +219,25 @@ export const BookingDetail: React.FC = () => {
             {booking.status.replace('_', ' ').toUpperCase()}
           </Badge>
         </div>
+
+        {/* Cancellation Info - Show at top if cancelled */}
+        {booking.cancellation_reason && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-2 text-red-900">Cancellation Reason</h2>
+            <p className="text-sm text-red-800">{booking.cancellation_reason}</p>
+            {booking.refund_amount && (
+              <div className="mt-3">
+                <span className="text-sm text-red-900">Refund Amount: </span>
+                <span className="font-semibold text-red-900">£{(booking.refund_amount / 100).toFixed(2)}</span>
+                {booking.refund_processed_at && (
+                  <span className="text-sm text-red-800 ml-2">
+                    (Processed on {format(new Date(booking.refund_processed_at), 'MMM dd, yyyy')})
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -352,21 +371,21 @@ export const BookingDetail: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">£{booking.subtotal.toFixed(2)}</span>
+                  <span className="font-medium">£{(booking.subtotal / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">VAT (20%)</span>
-                  <span className="font-medium">£{booking.vat.toFixed(2)}</span>
+                  <span className="font-medium">£{(booking.vat / 100).toFixed(2)}</span>
                 </div>
                 {booking.discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span className="text-sm">Discount</span>
-                    <span className="font-medium">-£{booking.discount.toFixed(2)}</span>
+                    <span className="font-medium">-£{(booking.discount / 100).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-semibold">Total</span>
-                  <span className="text-xl font-bold">£{booking.total.toFixed(2)}</span>
+                  <span className="text-xl font-bold">£{(booking.total / 100).toFixed(2)}</span>
                 </div>
                 {booking.promo_code && (
                   <div className="bg-green-50 border border-green-200 rounded px-3 py-2 text-sm">
@@ -483,25 +502,6 @@ export const BookingDetail: React.FC = () => {
           <div className="bg-admin-card-bg border border-border rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Internal Notes</h2>
             <p className="text-sm text-muted-foreground">{booking.internal_notes}</p>
-          </div>
-        )}
-
-        {/* Cancellation Info */}
-        {booking.cancellation_reason && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-2 text-red-900">Cancellation Reason</h2>
-            <p className="text-sm text-red-800">{booking.cancellation_reason}</p>
-            {booking.refund_amount && (
-              <div className="mt-3">
-                <span className="text-sm text-red-900">Refund Amount: </span>
-                <span className="font-semibold text-red-900">£{booking.refund_amount.toFixed(2)}</span>
-                {booking.refund_processed_at && (
-                  <span className="text-sm text-red-800 ml-2">
-                    (Processed on {format(new Date(booking.refund_processed_at), 'MMM dd, yyyy')})
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         )}
 
