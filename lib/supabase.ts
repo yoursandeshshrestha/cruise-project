@@ -210,6 +210,32 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['pricing_rules']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['pricing_rules']['Insert']>;
       };
+      contact_submissions: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          subject: string | null;
+          message: string;
+          booking_reference: string | null;
+          status: string;
+          admin_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          name: string;
+          email: string;
+          phone?: string | null;
+          subject?: string | null;
+          message: string;
+          booking_reference?: string | null;
+          status?: string;
+          admin_notes?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['contact_submissions']['Insert']>;
+      };
     };
   };
 }
