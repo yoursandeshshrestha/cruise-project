@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Layout } from '../../../components/client/Layout';
 import { Button } from '../../../components/client/Button';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Shield, Bus, Zap, Droplets, Sparkles, Clock, Key, Accessibility } from 'lucide-react';
-import { ADD_ONS } from '../../../constants';
+import { useAddOnsStore } from '../../../stores/addOnsStore';
+import { useBookingCartStore } from '../../../stores/bookingCartStore';
 
 export const Services: React.FC = () => {
+  const navigate = useNavigate();
+  const { addOns, fetchActiveAddOns } = useAddOnsStore();
+  const { addAddOn } = useBookingCartStore();
+
+  useEffect(() => {
+    fetchActiveAddOns();
+  }, [fetchActiveAddOns]);
+
+  const getIconComponent = (slug: string) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      'ev-charging': <Zap size={32} />,
+      'exterior-wash': <Droplets size={32} />,
+      'full-valet': <Sparkles size={32} />,
+    };
+    return iconMap[slug] || <Sparkles size={32} />;
+  };
+
+  const handleAddToBooking = (addOnSlug: string) => {
+    addAddOn(addOnSlug);
+    navigate('/book');
+  };
   return (
     <Layout>
       {/* Hero Section */}
@@ -71,23 +93,25 @@ export const Services: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {ADD_ONS.map(addon => (
+                {addOns.map(addon => (
                     <div key={addon.id} className="bg-white p-8 rounded-xl shadow-light border border-gray-100 hover:shadow-medium transition-shadow flex flex-col">
                         <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-primary mb-6">
-                            {addon.icon === 'Zap' && <Zap size={32} />}
-                            {addon.icon === 'Droplets' && <Droplets size={32} />}
-                            {addon.icon === 'Sparkles' && <Sparkles size={32} />}
+                            {getIconComponent(addon.slug)}
                         </div>
                         <h3 className="text-xl font-bold text-brand-dark mb-3">{addon.name}</h3>
-                        <p className="text-gray-600 mb-8 flex-grow">{addon.description}</p>
+                        <p className="text-gray-600 mb-8 grow">{addon.description}</p>
                         <div className="flex items-end justify-between border-t border-gray-50 pt-6">
                             <div>
                                 <span className="text-sm text-gray-400 font-medium uppercase tracking-wider">From</span>
-                                <div className="text-2xl font-bold text-brand-dark">£{addon.price.toFixed(2)}</div>
+                                <div className="text-2xl font-bold text-brand-dark">£{(addon.price / 100).toFixed(2)}</div>
                             </div>
-                            <Link to="/book">
-                                <Button variant="secondary" className="text-sm px-6">Add</Button>
-                            </Link>
+                            <Button
+                                variant="secondary"
+                                className="text-sm px-6 cursor-pointer"
+                                onClick={() => handleAddToBooking(addon.slug)}
+                            >
+                                Add
+                            </Button>
                         </div>
                     </div>
                 ))}

@@ -1,19 +1,38 @@
 import React, { useEffect } from 'react';
 import { Layout } from '../../../components/client/Layout';
 import { Button } from '../../../components/client/Button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Check, Zap, Droplets, Sparkles, Clock, Calendar } from 'lucide-react';
-import { ADD_ONS } from '../../../constants';
 import { usePricingStore } from '../../../stores/pricingStore';
+import { useAddOnsStore } from '../../../stores/addOnsStore';
+import { useBookingCartStore } from '../../../stores/bookingCartStore';
 
 export const Prices: React.FC = () => {
+  const navigate = useNavigate();
   const { activePricingRule, initialized, fetchActivePricingRule } = usePricingStore();
+  const { addOns, fetchActiveAddOns } = useAddOnsStore();
+  const { addAddOn } = useBookingCartStore();
 
   useEffect(() => {
     if (!initialized) {
       fetchActivePricingRule();
     }
-  }, [initialized, fetchActivePricingRule]);
+    fetchActiveAddOns();
+  }, [initialized, fetchActivePricingRule, fetchActiveAddOns]);
+
+  const getIconComponent = (slug: string) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      'ev-charging': <Zap size={24} />,
+      'exterior-wash': <Droplets size={24} />,
+      'full-valet': <Sparkles size={24} />,
+    };
+    return iconMap[slug] || <Sparkles size={24} />;
+  };
+
+  const handleAddToBooking = (addOnSlug: string) => {
+    addAddOn(addOnSlug);
+    navigate('/book');
+  };
 
   // Convert pence to pounds
   const dailyRate = activePricingRule ? (activePricingRule.price_per_day / 100) : 12.50;
@@ -91,20 +110,22 @@ export const Prices: React.FC = () => {
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-brand-dark mb-10 text-center">Optional Extras</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {ADD_ONS.map((addon) => (
+            {addOns.map((addon) => (
               <div key={addon.id} className="bg-white p-6 rounded-xl shadow-light border border-gray-100 hover:shadow-medium transition-shadow">
                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-primary mb-4">
-                  {addon.icon === 'Zap' && <Zap size={24} />}
-                  {addon.icon === 'Droplets' && <Droplets size={24} />}
-                  {addon.icon === 'Sparkles' && <Sparkles size={24} />}
+                  {getIconComponent(addon.slug)}
                 </div>
                 <h3 className="text-xl font-bold text-brand-dark mb-2">{addon.name}</h3>
                 <p className="text-gray-600 text-sm mb-6 min-h-[40px]">{addon.description}</p>
                 <div className="flex justify-between items-center border-t border-gray-100 pt-4">
-                  <span className="text-2xl font-bold text-brand-dark">£{addon.price.toFixed(2)}</span>
-                  <Link to="/book">
-                     <Button variant="secondary" className="px-4 py-2 text-sm">Add to Booking</Button>
-                  </Link>
+                  <span className="text-2xl font-bold text-brand-dark">£{(addon.price / 100).toFixed(2)}</span>
+                  <Button
+                    variant="secondary"
+                    className="px-4 py-2 text-sm cursor-pointer"
+                    onClick={() => handleAddToBooking(addon.slug)}
+                  >
+                    Add to Booking
+                  </Button>
                 </div>
               </div>
             ))}

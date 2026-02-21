@@ -15,6 +15,7 @@ import { useSettingsStore } from '../../../stores/settingsStore';
 import { useSystemSettingsStore } from '../../../stores/systemSettingsStore';
 import { useTerminalsStore } from '../../../stores/terminalsStore';
 import { usePromoCodesStore } from '../../../stores/promoCodesStore';
+import { useBookingCartStore } from '../../../stores/bookingCartStore';
 import { Check, ChevronRight, AlertCircle, Calendar, CreditCard, Lock, Ship, MapPin, Tag } from 'lucide-react';
 
 const INITIAL_STATE: BookingState = {
@@ -68,6 +69,9 @@ export const BookingFlow: React.FC = () => {
   // Promo codes store
   const { validatePromoCode, incrementPromoCodeUsage } = usePromoCodesStore();
 
+  // Booking cart store
+  const { getAddOns, clearCart } = useBookingCartStore();
+
   // Get today's date in YYYY-MM-DD format (local time)
   const getTodayLocal = () => {
     const now = new Date();
@@ -98,6 +102,18 @@ export const BookingFlow: React.FC = () => {
       }));
     }
   }, [location.search]);
+
+  // Load add-ons from cart on mount
+  useEffect(() => {
+    const cartAddOns = getAddOns();
+    if (cartAddOns.length > 0) {
+      setBooking(prev => ({
+        ...prev,
+        selectedAddOns: cartAddOns,
+      }));
+      console.log('[BookingFlow] Pre-populated add-ons from cart:', cartAddOns);
+    }
+  }, []);
 
   // Calculate Price
   const calculateTotal = () => {
@@ -313,6 +329,9 @@ export const BookingFlow: React.FC = () => {
         if (appliedPromoCode) {
           await incrementPromoCodeUsage(appliedPromoCode);
         }
+
+        // Clear the booking cart after successful booking
+        clearCart();
 
         setBookingReference(reference);
         setStep(5);

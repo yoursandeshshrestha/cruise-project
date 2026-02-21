@@ -3,7 +3,7 @@ import { Layout } from '../../../components/client/Layout';
 import { Button } from '../../../components/client/Button';
 import { Input } from '../../../components/client/Input';
 import { Select } from '../../../components/client/Select';
-import { AlertCircle, Calendar, Car, Ship, CreditCard, Download, Edit, XCircle, CheckCircle, MapPin, History, FileText, X, Save, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
+import { AlertCircle, Calendar, Car, Ship, CreditCard, Download, Edit, XCircle, CheckCircle, MapPin, History, X, Save, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useBookingsStore } from '../../../stores/bookingsStore';
@@ -301,10 +301,10 @@ export const ManageBooking: React.FC = () => {
 
     return (
         <Layout>
-            <div className="bg-neutral-light min-h-screen pb-20 relative">
+            <div className="bg-neutral-light pb-12 relative">
                 {/* Header Strip */}
                 <div className="bg-white border-b border-gray-200 sticky top-20 z-30">
-                    <div className="max-w-7xl mx-auto px-4 py-5">
+                    <div className="max-w-7xl mx-auto px-4 py-4">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                             <div>
                                 <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Booking Reference</p>
@@ -327,13 +327,13 @@ export const ManageBooking: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 py-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         {/* Left Column: Trip Details */}
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="lg:col-span-2 space-y-4">
                             {/* Trip Info Card */}
-                            <div className={`bg-white rounded-lg border ${isCancelled ? 'border-gray-200 opacity-75 grayscale' : 'border-gray-200'} p-6 md:p-8`}>
-                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+                            <div className={`bg-white rounded-lg border ${isCancelled ? 'border-gray-200 opacity-75 grayscale' : 'border-gray-200'} p-5`}>
+                                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
                                     <Calendar className="text-primary" size={20} />
                                     <h2 className="text-lg font-semibold text-brand-dark">Trip Itinerary</h2>
                                 </div>
@@ -375,12 +375,12 @@ export const ManageBooking: React.FC = () => {
                             </div>
 
                             {/* Vehicle & Passenger Card */}
-                            <div className={`bg-white rounded-lg border ${isCancelled ? 'border-gray-200 opacity-75 grayscale' : 'border-gray-200'} p-6 md:p-8`}>
-                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+                            <div className={`bg-white rounded-lg border ${isCancelled ? 'border-gray-200 opacity-75 grayscale' : 'border-gray-200'} p-5`}>
+                                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
                                     <Car className="text-primary" size={20} />
                                     <h2 className="text-lg font-semibold text-brand-dark">Vehicle & Details</h2>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-xs text-gray-500 mb-2">Vehicle Registration</p>
                                         <p className="font-mono bg-yellow-100 px-3 py-1.5 rounded border border-yellow-300 w-fit font-semibold text-brand-dark">{booking.vehicle_registration}</p>
@@ -402,10 +402,10 @@ export const ManageBooking: React.FC = () => {
                         </div>
 
                         {/* Right Column: Actions & Payment */}
-                        <div className="lg:col-span-1 space-y-6">
+                        <div className="lg:col-span-1 space-y-4">
 
                             {/* Action Buttons */}
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
+                            <div className="bg-white rounded-lg border border-gray-200 p-5">
                                 <h3 className="font-semibold text-brand-dark mb-4">Quick Actions</h3>
                                 <div className="space-y-2">
                                     <button
@@ -440,12 +440,12 @@ export const ManageBooking: React.FC = () => {
                             </div>
 
                             {/* Payment Summary */}
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+                            <div className="bg-white rounded-lg border border-gray-200 p-5">
+                                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
                                     <CreditCard size={18} className="text-primary" />
                                     <h3 className="font-semibold text-brand-dark">Payment Summary</h3>
                                 </div>
-                                <div className="space-y-3 text-sm">
+                                <div className="space-y-2 text-sm">
                                     {booking.add_ons && booking.add_ons.length > 0 && (
                                       <div className="pb-2 border-b border-gray-100">
                                         <p className="text-xs text-gray-500 mb-2">Add-ons:</p>
@@ -487,7 +487,7 @@ export const ManageBooking: React.FC = () => {
                             </div>
                             
                             {/* Need Help */}
-                             <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
+                             <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 text-center">
                                 <h3 className="font-semibold text-brand-dark mb-2">Need Help?</h3>
                                 <p className="text-sm text-gray-600 mb-4">Our support team is available 24/7 to assist with your booking.</p>
                                 <Link to="/contact" className="inline-block bg-primary text-white hover:bg-primary-dark font-medium text-sm px-4 py-2 rounded-lg transition-colors cursor-pointer">
@@ -664,12 +664,9 @@ export const ManageBooking: React.FC = () => {
   // Login UI (Fallback for idle/loading/error states)
   return (
     <Layout>
-      <div className="bg-neutral-light min-h-screen py-20 flex items-center justify-center px-4">
-        <div className="bg-white p-8 md:p-10 rounded-lg border border-gray-200 w-full max-w-lg">
-            <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
-                    <FileText size={28} />
-                </div>
+      <div className="bg-neutral-light py-12 flex items-center justify-center px-4">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 w-full max-w-lg">
+            <div className="mb-6">
                 <h1 className="text-2xl font-bold text-brand-dark mb-2">Manage Booking</h1>
                 <p className="text-gray-600 text-sm">Enter your booking reference and email to view, amend, or cancel your booking.</p>
             </div>
@@ -719,7 +716,7 @@ export const ManageBooking: React.FC = () => {
                 </button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="mt-6 pt-5 border-t border-gray-200">
                 <div className="text-center">
                     <p className="text-sm text-gray-600 mb-2">Can't find your booking reference?</p>
                     <Link to="/contact" className="text-primary font-medium text-sm hover:text-brand-dark transition-colors cursor-pointer">
