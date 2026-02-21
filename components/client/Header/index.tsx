@@ -27,14 +27,14 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-50 bg-white shadow-light">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo */}
+        <div className="grid grid-cols-[auto_1fr_auto] items-center h-20 gap-8">
+          {/* Left: Logo */}
           <Link to="/" className="flex items-center gap-2 group" onClick={() => window.scrollTo(0, 0)}>
             <BrandLogo variant="color" />
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-8">
+          {/* Center: Desktop Nav Links */}
+          <nav className="hidden lg:flex items-center justify-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.label}
@@ -44,7 +44,10 @@ export const Header: React.FC = () => {
                 {item.label}
               </Link>
             ))}
-            
+          </nav>
+
+          {/* Right: Buttons */}
+          <div className="hidden lg:flex items-center gap-3">
             <Link to="/manage-booking" onClick={() => window.scrollTo(0, 0)}>
               <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                 Manage Booking
@@ -58,11 +61,11 @@ export const Header: React.FC = () => {
                 </button>
               </Link>
             )}
-          </nav>
+          </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden p-2 text-brand-dark"
+            className="lg:hidden p-2 text-brand-dark justify-self-end"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
           >

@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MapPin, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../BrandLogo';
+import { useSystemSettingsStore } from '../../../stores/systemSettingsStore';
+import { useTerminalsStore } from '../../../stores/terminalsStore';
 
 export const Footer: React.FC = () => {
+  const { getCompanyInfo } = useSystemSettingsStore();
+  const companyInfo = getCompanyInfo();
+  const { terminals, fetchActiveTerminals } = useTerminalsStore();
+
+  useEffect(() => {
+    fetchActiveTerminals();
+  }, [fetchActiveTerminals]);
+
+  const getTerminalSlug = (terminalName: string) => {
+    return terminalName.toLowerCase().replace(/\s+/g, '-');
+  };
+
   return (
     <footer className="bg-brand-dark text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,11 +52,16 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="font-bold text-lg mb-4">Cruise Terminals</h4>
             <ul className="space-y-3 text-sm text-gray-300">
-              <li><Link to="/parking/ocean-terminal" className="hover:text-primary transition-colors">Ocean Terminal Parking</Link></li>
-              <li><Link to="/parking/mayflower-terminal" className="hover:text-primary transition-colors">Mayflower Terminal Parking</Link></li>
-              <li><Link to="/parking/qeii-terminal" className="hover:text-primary transition-colors">QEII Terminal Parking</Link></li>
-              <li><Link to="/parking/city-cruise-terminal" className="hover:text-primary transition-colors">City Cruise Terminal Parking</Link></li>
-              <li><Link to="/parking/horizon-terminal" className="hover:text-primary transition-colors">Horizon Terminal Parking</Link></li>
+              {terminals.map((terminal) => (
+                <li key={terminal.id}>
+                  <Link
+                    to={`/parking/${getTerminalSlug(terminal.name)}`}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {terminal.name} Parking
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -52,15 +71,15 @@ export const Footer: React.FC = () => {
             <ul className="space-y-4 text-sm text-gray-300">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-primary shrink-0 mt-1" />
-                <span>Unit 5, West Quay Industrial Estate,<br />Southampton, SO15 1GZ</span>
+                <span>{companyInfo.address}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-primary shrink-0" />
-                <a href="tel:02380000000">023 8000 0000</a>
+                <a href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}>{companyInfo.phone}</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-primary shrink-0" />
-                <a href="mailto:support@simplecruiseparking.co.uk">support@simplecruiseparking.co.uk</a>
+                <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>
               </li>
             </ul>
           </div>
