@@ -16,6 +16,20 @@ export const Prices: React.FC = () => {
     fetchActiveAddOns();
   }, [fetchActiveAddOns]);
 
+  // Pricing tiers with weekly bulk discounts
+  const pricingTiers = [
+    { days: 1, carPrice: 26.00, label: '1 Day' },
+    { days: 2, carPrice: 39.00, label: '2 Days' },
+    { days: 3, carPrice: 52.00, label: '3 Days' },
+    { days: 4, carPrice: 65.00, label: '4 Days' },
+    { days: 5, carPrice: 78.00, label: '5 Days' },
+    { days: 6, carPrice: 91.00, label: '6 Days' },
+    { days: 7, carPrice: 95.00, label: '1 Week' },
+    { days: 14, carPrice: 160.00, label: '2 Weeks' },
+    { days: 21, carPrice: 220.00, label: '3 Weeks' },
+    { days: 28, carPrice: 310.00, label: '4 Weeks' },
+  ];
+
   const getIconComponent = (slug: string) => {
     const iconMap: Record<string, React.ReactNode> = {
       'ev-charging': <Zap size={24} />,
@@ -64,15 +78,13 @@ export const Prices: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {[1, 2, 3, 4, 5, 6, 7, 14, 21, 28].map((days) => {
-                      const carPrice = FIRST_DAY_RATE + (days - 1) * ADDITIONAL_DAY_RATE;
-                      const vanPrice = Math.round(carPrice * VAN_SURCHARGE_MULTIPLIER * 100) / 100;
-                      const label = days === 7 ? '1 Week' : days === 14 ? '2 Weeks' : days === 21 ? '3 Weeks' : days === 28 ? '4 Weeks' : `${days} Day${days > 1 ? 's' : ''}`;
+                    {pricingTiers.map((tier) => {
+                      const vanPrice = Math.round(tier.carPrice * VAN_SURCHARGE_MULTIPLIER * 100) / 100;
 
                       return (
-                        <tr key={days} className="hover:bg-gray-50">
-                          <td className="p-3 font-medium text-gray-700">{label}</td>
-                          <td className="p-3 text-right font-bold text-brand-dark">£{carPrice.toFixed(2)}</td>
+                        <tr key={tier.days} className="hover:bg-gray-50">
+                          <td className="p-3 font-medium text-gray-700">{tier.label}</td>
+                          <td className="p-3 text-right font-bold text-brand-dark">£{tier.carPrice.toFixed(2)}</td>
                           <td className="p-3 text-right font-bold text-amber-700">£{vanPrice.toFixed(2)}</td>
                         </tr>
                       );
