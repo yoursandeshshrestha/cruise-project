@@ -7,43 +7,51 @@ import { Link } from 'react-router-dom';
 const REVIEWS_DATA = [
     {
         id: 1,
-        name: 'Sarah Jenkins',
-        date: '2 days ago',
+        name: 'Linda & Barry H',
+        date: '3 days ago',
         rating: 5,
-        title: 'Excellent service!',
-        text: 'The shuttle was waiting when we arrived, and the drivers were so helpful with our heavy bags. Will definitely use again for our next P&O cruise.'
+        title: 'Stress-free from start to finish',
+        text: 'Arrived nice and early and were on the shuttle within minutes. The staff were calm and organised and it really set the tone for the holiday. Brilliant service.'
     },
     {
         id: 2,
-        name: 'David Thompson',
-        date: '1 week ago',
+        name: 'James Corbett',
+        date: '5 days ago',
         rating: 5,
-        title: 'Great value for money',
-        text: 'Simple to find, very secure, and much cheaper than parking at the port. The EV charging add-on was a lifesaver for our drive home.'
+        title: 'Much better than port parking',
+        text: 'Saved a fortune compared to parking at the terminal and honestly had no idea it would be this easy. Clean facility, quick shuttle, and someone even helped me with my case.'
     },
     {
         id: 3,
-        name: 'Michael & Joan',
-        date: '2 weeks ago',
-        rating: 4,
-        title: 'Seamless experience',
-        text: 'First time using off-site parking and it was seamless. Very friendly staff. The car wash was a nice touch to come back to. Only gave 4 stars because the sign at the entrance is a bit small.'
+        name: 'Tracey M',
+        date: '1 week ago',
+        rating: 5,
+        title: 'Absolutely faultless',
+        text: 'Booked last minute and it all went perfectly. The driver was friendly and had us at the terminal in no time. Car was exactly where we left it when we got back.'
     },
     {
         id: 4,
-        name: 'Peter W',
-        date: '3 weeks ago',
-        rating: 5,
-        title: 'Highly Recommended',
-        text: 'We usually park at the terminal but decided to save some money this time. Honestly, the service was just as good. The shuttle dropped us right at the door.'
+        name: 'Robert & Gill',
+        date: '2 weeks ago',
+        rating: 4,
+        title: 'Really good value',
+        text: 'Very impressed with the security and the speed of the shuttle. Only slight thing was a short wait on the way back, but the driver kept us updated and it wasn\'t long at all.'
     },
     {
         id: 5,
-        name: 'Emma Louise',
+        name: 'Christine D',
+        date: '3 weeks ago',
+        rating: 5,
+        title: 'Lovely team',
+        text: 'The staff at the car park were so warm and welcoming. It\'s the small things that make a difference and they really went out of their way to help. Will definitely be back.'
+    },
+    {
+        id: 6,
+        name: 'Paul Whitmore',
         date: '1 month ago',
         rating: 5,
-        title: 'Friendly Staff',
-        text: 'The ladies at reception were lovely and the driver was hilarious. Started the holiday off with a smile.'
+        title: 'Can\'t fault it',
+        text: 'Booked for our Royal Caribbean cruise and everything worked like clockwork. Easy to find, great price, and the shuttle was ready and waiting. Highly recommend.'
     }
 ];
 
@@ -56,7 +64,7 @@ export const Reviews: React.FC = () => {
             {/* Header Stats */}
             <div className="text-center mb-16">
                 <h1 className="text-4xl font-bold text-brand-dark mb-4">Customer Reviews</h1>
-                <p className="text-lg text-gray-600 mb-8">See what thousands of happy cruisers have to say.</p>
+                <p className="text-lg text-gray-600 mb-8">See what hundreds of happy cruisers have to say.</p>
                 
                 <div className="inline-flex items-center gap-8 bg-white px-8 py-4 rounded-full shadow-sm border border-gray-200">
                     <div className="text-center">
@@ -67,7 +75,7 @@ export const Reviews: React.FC = () => {
                     </div>
                     <div className="h-10 w-px bg-gray-200"></div>
                     <div className="text-center">
-                        <div className="text-3xl font-bold text-brand-dark">2.1k+</div>
+                        <div className="text-3xl font-bold text-brand-dark">200+</div>
                         <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Verified Reviews</div>
                     </div>
                 </div>

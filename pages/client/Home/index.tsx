@@ -2,7 +2,7 @@ import React from 'react';
 import { Layout } from '../../../components/client/Layout';
 import { BookingWidget } from '../../../components/client/BookingWidget';
 import { Button } from '../../../components/client/Button';
-import { Shield, Clock, Smile, MapPin, Star, Truck, Heart, LifeBuoy, Anchor, Leaf } from 'lucide-react';
+import { Shield, Clock, Smile, MapPin, Star, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; text: string }> = ({ icon, title, text }) => (
@@ -32,8 +32,8 @@ export const Home: React.FC = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="bg-primary text-white pt-20 pb-24 md:pb-32 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-brand-dark/10"></div>
+      <section className="text-white pt-20 pb-24 md:pb-32 px-4 relative overflow-hidden" style={{ backgroundImage: "url('/homepage-hero.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-brand-dark/60"></div>
         <div className="max-w-7xl mx-auto relative z-10 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
             Start your holiday <br className="hidden md:block"/> the simple way.
@@ -55,7 +55,7 @@ export const Home: React.FC = () => {
           <FeatureCard 
             icon={<Shield size={32} />}
             title="Safe & Secure"
-            text="Fully fenced, CCTV monitored facility with gated access. Your vehicle never leaves our secure compound."
+            text="Fully fenced, CCTV monitored facility with gated access and ADT security. Nightly patrols ensure your vehicle is safe around the clock."
           />
           <FeatureCard 
             icon={<Truck size={32} />}
@@ -65,7 +65,7 @@ export const Home: React.FC = () => {
           <FeatureCard 
             icon={<Smile size={32} />}
             title="Rated 5 Stars"
-            text="Thousands of happy cruisers trust us every year. Check our Google Reviews to see why."
+            text="Hundreds of happy cruisers trust us every year. Check our Google Reviews to see why."
           />
         </div>
       </section>
@@ -132,39 +132,33 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Charities We Support */}
-      <section className="bg-primary py-16">
-        <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-3xl font-bold text-white mb-12 text-center">Charities We Support</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-12 items-center justify-items-center opacity-90">
-                {/* Charity 1 */}
-                <div className="flex flex-col items-center gap-3 group hover:scale-105 transition-transform cursor-default">
-                    <div className="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center bg-white/10 backdrop-blur-sm">
-                        <LifeBuoy className="text-white" size={48} strokeWidth={2} />
-                    </div>
-                    <span className="text-white font-bold tracking-wide text-lg">RNLI Support</span>
-                </div>
-                 {/* Charity 2 */}
-                <div className="flex flex-col items-center gap-3 group hover:scale-105 transition-transform cursor-default">
-                    <div className="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center bg-white/10 backdrop-blur-sm">
-                        <Heart className="text-white" size={48} fill="white" strokeWidth={0} />
-                    </div>
-                    <span className="text-white font-bold tracking-wide text-lg">Heart Foundation</span>
-                </div>
-                 {/* Charity 3 */}
-                <div className="flex flex-col items-center gap-3 group hover:scale-105 transition-transform cursor-default">
-                    <div className="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center bg-white/10 backdrop-blur-sm">
-                        <Anchor className="text-white" size={48} strokeWidth={2} />
-                    </div>
-                    <span className="text-white font-bold tracking-wide text-lg">Seafarers UK</span>
-                </div>
-                 {/* Charity 4 */}
-                <div className="flex flex-col items-center gap-3 group hover:scale-105 transition-transform cursor-default">
-                    <div className="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center bg-white/10 backdrop-blur-sm">
-                        <Leaf className="text-white" size={48} strokeWidth={2} />
-                    </div>
-                    <span className="text-white font-bold tracking-wide text-lg">Ocean Clean</span>
-                </div>
-            </div>
+      <section className="bg-primary py-16 overflow-hidden">
+        <h2 className="text-3xl font-bold text-white mb-12 text-center">Charities We Support</h2>
+        <div className="relative flex">
+          <style>{`
+            @keyframes marquee {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-33.333%); }
+            }
+            .charity-marquee {
+              display: flex;
+              animation: marquee 20s linear infinite;
+              width: max-content;
+              pointer-events: none;
+              user-select: none;
+              will-change: transform;
+            }
+          `}</style>
+          <div className="charity-marquee">
+            {Array.from({ length: 3 }, () => [
+              '/charities-logos/rnli.png',
+              '/charities-logos/british-heart.png',
+              '/charities-logos/seafarers.png',
+              '/charities-logos/ocean-cleanup.png',
+            ]).flat().map((src, i) => (
+              <img key={i} src={src} alt="" className="h-36 w-auto mx-16 shrink-0 object-contain" />
+            ))}
+          </div>
         </div>
       </section>
 

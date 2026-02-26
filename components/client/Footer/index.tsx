@@ -30,7 +30,7 @@ export const Footer: React.FC = () => {
               </Link>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed mb-6">
-              Secure, stress-free parking for Southampton cruise passengers. We take care of your car so you can enjoy your holiday.
+              Safe, secure and stress-free parking for Southampton cruise passengers. Offering complete peace of mind in our secure facilities.
             </p>
           </div>
 

@@ -13,7 +13,7 @@ export const HowItWorks: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">How It Works</h1>
           <p className="text-xl text-blue-50 max-w-3xl mx-auto leading-relaxed">
-            Our park and ride service is designed to be the easiest part of your holiday. 
+            Our secure parking and shuttle service is designed to be the easiest part of your holiday.
             From the moment you arrive to the moment you leave, we handle the logistics so you can relax.
           </p>
         </div>
@@ -139,7 +139,7 @@ export const HowItWorks: React.FC = () => {
                         <Key size={20} className="text-primary" />
                         Do I need to leave my keys?
                     </h3>
-                    <p className="text-gray-600">Yes. As we operate a secure block parking facility to maximise space and security, we require your keys. They are stored in a secure safe and your vehicle is only moved by fully insured staff to manage the car park or perform add-on services.</p>
+                    <p className="text-gray-600">Yes. As we operate a secure block parking facility to maximise space and security, we require your keys. They are stored securely off site and your vehicle is only moved by fully insured staff to manage the car park or perform add-on services.</p>
                 </div>
                 
                  <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -147,7 +147,7 @@ export const HowItWorks: React.FC = () => {
                         <ShieldCheck size={20} className="text-primary" />
                         Is my car safe?
                     </h3>
-                    <p className="text-gray-600">Absolutely. Our facility is fully fenced with 24/7 CCTV monitoring, motion detection, and gated access. Staff are on-site during all operational hours.</p>
+                    <p className="text-gray-600">Absolutely. Our facility is protected by ADT security systems, fully fenced with 24/7 CCTV monitoring, motion detection, and gated access. We conduct nightly patrols with a security dog and all keys are stored securely off site. Staff are on-site during all operational hours.</p>
                 </div>
 
                  <div className="bg-white p-6 rounded-lg shadow-sm">

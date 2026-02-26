@@ -73,7 +73,7 @@ export const Terminal: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-brand-dark mb-4">Why park with us for {terminal.name}?</h2>
               <p className="text-gray-600 leading-relaxed mb-4">
-                Avoid the expensive on-port parking rates. Our secure facility is located just minutes away from {terminal.name}, offering a park and ride service that is often faster than parking at the docks yourself.
+                Avoid the expensive on-port parking rates. Our secure facility is located just minutes away from {terminal.name}, with a free shuttle transfer that gets you to the terminal faster than parking at the docks yourself.
               </p>
               <ul className="space-y-4 mt-6">
                 <li className="flex items-start gap-3">

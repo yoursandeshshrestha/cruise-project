@@ -1,6 +1,6 @@
 export enum ParkingType {
-  PARK_AND_RIDE = 'Park and Ride',
-  MEET_AND_GREET = 'Meet and Greet' // Future proofing, though strictly P&R for now
+  PARK_AND_RIDE = 'Secure Parking & Shuttle',
+  MEET_AND_GREET = 'Meet and Greet'
 }
 
 export interface AddOn {

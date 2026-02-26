@@ -32,9 +32,12 @@ export const Location: React.FC = () => {
                     Southampton<br />
                     <strong>SO16 6PB</strong>
                   </p>
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <a href="https://www.google.com/maps/search/?api=1&query=50.931932,-1.427666" target="_blank" rel="noopener noreferrer">
                       <Button variant="secondary" className="text-sm py-2 px-4">Open in Google Maps</Button>
+                    </a>
+                    <a href="https://maps.apple.com/?ll=50.931932,-1.427666&q=Simple+Cruise+Parking" target="_blank" rel="noopener noreferrer">
+                      <Button variant="secondary" className="text-sm py-2 px-4">Open in Apple Maps</Button>
                     </a>
                     <a href="https://waze.com/ul?ll=50.931932,-1.427666&navigate=yes" target="_blank" rel="noopener noreferrer">
                       <Button variant="secondary" className="text-sm py-2 px-4">Open in Waze</Button>
@@ -76,11 +79,11 @@ export const Location: React.FC = () => {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  {[
-                    { name: 'Ocean Terminal', time: '15 mins' },
-                    { name: 'Mayflower Terminal', time: '15 mins' },
-                    { name: 'City Cruise Terminal', time: '15 mins' },
-                    { name: 'QEII Terminal', time: '20 mins' },
-                    { name: 'Horizon Terminal', time: '18 mins' },
+                    { name: 'Ocean Terminal', time: '9 mins' },
+                    { name: 'Mayflower Terminal', time: '9 mins' },
+                    { name: 'City Cruise Terminal', time: '9 mins' },
+                    { name: 'QEII Terminal', time: '14 mins' },
+                    { name: 'Horizon Terminal', time: '12 mins' },
                  ].map(t => (
                     <div key={t.name} className="flex justify-between items-center bg-gray-50 p-3 rounded border border-gray-100">
                         <span className="font-medium text-sm">{t.name}</span>
@@ -88,6 +91,7 @@ export const Location: React.FC = () => {
                     </div>
                  ))}
               </div>
+              <p className="text-xs text-gray-500 mt-3 italic">These times vary depending on traffic conditions.</p>
             </div>
           </div>
 

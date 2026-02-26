@@ -417,7 +417,7 @@ VALUES (
 -- Add-ons
 INSERT INTO add_ons (slug, name, description, price, icon, display_order) VALUES
   ('ev-charging', 'EV Charging', 'Full charge while you cruise', 3500, 'zap', 1),
-  ('exterior-wash', 'Exterior Wash', 'Professional exterior cleaning', 1500, 'droplet', 2),
+  ('exterior-wash', 'Exterior Wash', 'External cleaning', 1500, 'droplet', 2),
   ('full-valet', 'Full Valet', 'Complete interior and exterior valet', 4500, 'sparkles', 3);
 
 -- Default capacity (100 spaces per day for next year)

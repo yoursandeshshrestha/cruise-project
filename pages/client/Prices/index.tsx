@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, Zap, Droplets, Sparkles, Clock, Calendar, Truck } from 'lucide-react';
 import { useAddOnsStore } from '../../../stores/addOnsStore';
 import { useBookingCartStore } from '../../../stores/bookingCartStore';
-import { PRICING_TIERS, VAN_SURCHARGE_MULTIPLIER } from '../../../constants';
+import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE, VAN_SURCHARGE_MULTIPLIER } from '../../../constants';
 
 export const Prices: React.FC = () => {
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ export const Prices: React.FC = () => {
           {/* Pricing Table Card */}
           <div className="bg-white rounded-2xl shadow-medium border border-gray-100 overflow-hidden col-span-1 md:col-span-2">
             <div className="p-8">
-              <h2 className="text-2xl font-bold text-brand-dark mb-2">Park & Ride Pricing</h2>
+              <h2 className="text-2xl font-bold text-brand-dark mb-2">Pricing</h2>
               <p className="text-gray-600 mb-6">
                 All prices include secure parking and free shuttle transfers for all passengers.
               </p>
@@ -64,17 +64,37 @@ export const Prices: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {PRICING_TIERS.map((tier) => (
-                      <tr key={tier.maxDays} className="hover:bg-gray-50">
-                        <td className="p-3 font-medium text-gray-700">{tier.label}</td>
-                        <td className="p-3 text-right font-bold text-brand-dark">£{tier.price.toFixed(2)}</td>
-                        <td className="p-3 text-right font-bold text-amber-700">
-                          £{(Math.round(tier.price * VAN_SURCHARGE_MULTIPLIER * 100) / 100).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    <tr className="hover:bg-gray-50">
+                      <td className="p-3 font-medium text-gray-700">First Day</td>
+                      <td className="p-3 text-right font-bold text-brand-dark">£{FIRST_DAY_RATE.toFixed(2)}</td>
+                      <td className="p-3 text-right font-bold text-amber-700">
+                        £{(Math.round(FIRST_DAY_RATE * VAN_SURCHARGE_MULTIPLIER * 100) / 100).toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-gray-50">
+                      <td className="p-3 font-medium text-gray-700">Each Additional Day</td>
+                      <td className="p-3 text-right font-bold text-brand-dark">£{ADDITIONAL_DAY_RATE.toFixed(2)}</td>
+                      <td className="p-3 text-right font-bold text-amber-700">
+                        £{(Math.round(ADDITIONAL_DAY_RATE * VAN_SURCHARGE_MULTIPLIER * 100) / 100).toFixed(2)}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-brand-dark font-medium mb-2">Example Prices (Car)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  {[3, 7, 10, 14].map(days => {
+                    const price = FIRST_DAY_RATE + (days - 1) * ADDITIONAL_DAY_RATE;
+                    return (
+                      <div key={days} className="text-center">
+                        <span className="block text-gray-500">{days} days</span>
+                        <span className="font-bold text-brand-dark">£{price.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="mt-4 flex items-start gap-2 text-xs text-gray-500">
@@ -113,12 +133,14 @@ export const Prices: React.FC = () => {
         {/* What's Included */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-brand-dark mb-10 text-center">What's Included</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
               { label: 'Secure, CCTV monitored facility' },
               { label: 'Free shuttle to all terminals (10 mins)' },
               { label: 'Luggage assistance included' },
               { label: 'Flexible amendment policy' },
+              { label: 'Nightly security patrols' },
+              { label: 'ADT security system on site' },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-2 text-gray-700">
                 <Check size={18} className="text-green-500 shrink-0" />
@@ -168,7 +190,7 @@ export const Prices: React.FC = () => {
                 <tbody className="divide-y divide-gray-100">
                     <tr>
                         <td className="p-4 font-medium">Cost per week (approx)</td>
-                        <td className="p-4 text-center font-bold text-green-600">£95.00</td>
+                        <td className="p-4 text-center font-bold text-green-600">£104.00</td>
                         <td className="p-4 text-center text-gray-500">£140.00+</td>
                     </tr>
                     <tr>

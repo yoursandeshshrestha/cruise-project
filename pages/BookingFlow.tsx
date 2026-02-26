@@ -149,20 +149,20 @@ export const BookingFlow: React.FC = () => {
   const renderStep2 = () => (
     <div className="space-y-8 animate-in slide-in-from-right duration-300">
       <div>
-        <h2 className="text-2xl font-bold text-brand-dark mb-4">Select Parking Option</h2>
-        <div className="border-2 border-primary bg-blue-50 rounded-lg p-6 relative">
+        <h2 className="text-2xl font-bold text-brand-dark mb-4">Your Parking Service</h2>
+        <div className="border-2 border-primary bg-blue-50 rounded-lg p-6 pt-12 md:pt-6 relative">
           <div className="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2 py-1 rounded">
-            RECOMMENDED
+            INCLUDED
           </div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-bold">{ParkingType.PARK_AND_RIDE}</h3>
             <span className="text-xl font-bold text-primary">Included</span>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Secure parking at our monitored facility with free shuttle transfer to/from the terminal.</p>
+          <p className="text-sm text-gray-600 mb-4">Secure parking at our monitored facility with a free shuttle transfer to/from the terminal.</p>
           <ul className="text-sm space-y-2 text-gray-700">
             <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> 10 minute transfer time</li>
             <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> CCTV & Gated Security</li>
-            <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> Keep your keys (optional)</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> Keys stored securely off site</li>
           </ul>
         </div>
       </div>
