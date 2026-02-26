@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Ship } from 'lucide-react';
+import { Calendar, Ship, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 import { CRUISE_LINES } from '../constants';
+import { useSystemSettingsStore } from '../stores/systemSettingsStore';
 
 export const BookingWidget: React.FC = () => {
   const navigate = useNavigate();
   const [dropOffDate, setDropOffDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [cruiseLine, setCruiseLine] = useState('');
+
+  const { fetchSettings, isBookingEnabled, initialized, loading, getSetting, version } = useSystemSettingsStore();
+
+  // Fetch system settings on mount
+  useEffect(() => {
+    if (!initialized) {
+      fetchSettings();
+    }
+  }, [initialized, fetchSettings]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +30,36 @@ export const BookingWidget: React.FC = () => {
     });
     navigate(`/book?${params.toString()}`);
   };
+
+  // Show loading state while initializing
+  if (!initialized || loading || version === 0) {
+    return (
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-medium max-w-4xl mx-auto -mt-16 md:-mt-10 relative z-10 border border-gray-100">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const bookingEnabled = isBookingEnabled();
+
+  // Show unavailable message if booking is disabled
+  if (!bookingEnabled) {
+    return (
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-medium max-w-4xl mx-auto -mt-16 md:-mt-10 relative z-10 border border-gray-100">
+        <div className="flex items-center gap-4 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200">
+          <AlertCircle size={24} className="shrink-0" />
+          <div>
+            <h3 className="font-bold text-brand-dark mb-1">Booking Currently Unavailable</h3>
+            <p className="text-sm text-gray-600">
+              Online booking is temporarily unavailable. Please contact us directly for assistance.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-medium max-w-4xl mx-auto -mt-16 md:-mt-10 relative z-10 border border-gray-100">

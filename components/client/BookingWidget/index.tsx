@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ship } from 'lucide-react';
+import { Ship, AlertCircle } from 'lucide-react';
 import { Button } from '../Button';
 import { SearchableSelect } from '../SearchableSelect';
 import { DatePicker } from '../DatePicker';
 import { useCruiseLinesStore } from '../../../stores/cruiseLinesStore';
+import { useSystemSettingsStore } from '../../../stores/systemSettingsStore';
 
 export const BookingWidget: React.FC = () => {
   const navigate = useNavigate();
@@ -15,10 +16,20 @@ export const BookingWidget: React.FC = () => {
   // Fetch cruise lines from store
   const { cruiseLines, fetchActiveCruiseLines } = useCruiseLinesStore();
 
+  // Fetch system settings
+  const { fetchSettings, isBookingEnabled, isMaintenanceMode, initialized, loading, version } = useSystemSettingsStore();
+
   // Fetch active cruise lines on mount (public view)
   useEffect(() => {
     fetchActiveCruiseLines();
   }, [fetchActiveCruiseLines]);
+
+  // Fetch system settings on mount
+  useEffect(() => {
+    if (!initialized) {
+      fetchSettings();
+    }
+  }, [initialized, fetchSettings]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +55,42 @@ export const BookingWidget: React.FC = () => {
     }
     navigate(`/book?${params.toString()}`);
   };
+
+  // Show loading state while initializing
+  if (!initialized || loading || version === 0) {
+    return (
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-medium max-w-6xl mx-auto -mt-16 md:-mt-10 relative z-10 border border-gray-100">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const bookingEnabled = isBookingEnabled();
+  const maintenanceMode = isMaintenanceMode();
+
+  // Show unavailable message if booking is disabled or in maintenance
+  if (!bookingEnabled || maintenanceMode) {
+    return (
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-medium max-w-6xl mx-auto -mt-16 md:-mt-10 relative z-10 border border-gray-100">
+        <div className="flex items-center gap-4 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200">
+          <AlertCircle size={24} className="shrink-0" />
+          <div>
+            <h3 className="font-bold text-brand-dark mb-1">
+              {maintenanceMode ? 'System Maintenance' : 'Booking Currently Unavailable'}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {maintenanceMode
+                ? 'The system is currently undergoing maintenance. Please try again later.'
+                : 'Online booking is temporarily unavailable. Please contact us directly for assistance.'
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-medium max-w-6xl mx-auto -mt-16 md:-mt-10 relative z-10 border border-gray-100">
