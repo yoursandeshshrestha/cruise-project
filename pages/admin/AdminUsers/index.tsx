@@ -158,7 +158,17 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Track initialization to prevent full page reload on subsequent loads
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (users.length > 0 || !loading) {
+      setInitialized(true);
+    }
+  }, [users, loading]);
+
+  // Only show full loading screen on initial load
+  if (!initialized && loading) {
     return (
       <AdminLayout
         showSidebar

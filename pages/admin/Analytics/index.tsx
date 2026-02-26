@@ -105,7 +105,8 @@ export const Analytics: React.FC = () => {
     { label: 'Analytics' }
   ];
 
-  if (!initialized || loading) {
+  // Only show full loading screen on initial load
+  if (!initialized) {
     return (
       <AdminLayout showSidebar showHeader breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center h-full p-8">

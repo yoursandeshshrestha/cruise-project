@@ -113,7 +113,8 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  if (!initialized || loading) {
+  // Only show full loading screen on initial load
+  if (!initialized) {
     return (
       <AdminLayout showSidebar showHeader breadcrumbs={[{ label: 'Dashboard' }]}>
         <div className="flex items-center justify-center h-full p-8">

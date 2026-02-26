@@ -215,7 +215,8 @@ export const AddOns: React.FC = () => {
     }
   };
 
-  if (!initialized || loading) {
+  // Only show full loading screen on initial load
+  if (!initialized) {
     return (
       <AdminLayout showSidebar showHeader breadcrumbs={[{ label: 'Configuration' }, { label: 'Add-ons' }]}>
         <div className="flex items-center justify-center h-full p-8">

@@ -152,7 +152,8 @@ const SettingsContent: React.FC = () => {
     }
   };
 
-  if (!initialized || loading) {
+  // Only show full loading screen on initial load
+  if (!initialized) {
     return (
       <div className="flex items-center justify-center h-full p-8">
         <Spinner className="h-8 w-8" />
