@@ -162,6 +162,7 @@ export const Pricing: React.FC = () => {
         start_date: formData.start_date ? format(formData.start_date, 'yyyy-MM-dd') : null,
         end_date: formData.end_date ? format(formData.end_date, 'yyyy-MM-dd') : null,
         is_active: formData.is_active,
+        display_order: formData.id ? undefined : pricingRules.length + 1,
       };
 
       if (formData.id) {
