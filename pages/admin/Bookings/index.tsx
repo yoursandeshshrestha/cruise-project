@@ -21,23 +21,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 export const Bookings: React.FC = () => {
   const navigate = useNavigate();
-  const { bookings, loading, error, fetchBookings, initialized } = useBookingsStore();
+  const { bookings, stats, loading, error, fetchBookings, fetchStats, resetPagination, initialized, hasMore, page } = useBookingsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showPending, setShowPending] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Fetch bookings on mount
-  useEffect(() => {
-    fetchBookings(searchQuery, statusFilter);
-  }, []);
-
-  // Debounce search query
+  // Fetch bookings and stats on mount and when filters change
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchBookings(searchQuery, statusFilter);
-    }, 500); // 500ms debounce
+      resetPagination();
+      fetchBookings(0, 50, { search: searchQuery, status: statusFilter, showPending });
+    }, searchQuery ? 500 : 0); // 500ms debounce only for search
 
     return () => clearTimeout(timer);
-  }, [searchQuery, statusFilter, fetchBookings]);
+  }, [searchQuery, statusFilter, showPending, fetchBookings, resetPagination]);
+
+  // Fetch stats only on mount
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Load more handler for infinite scroll
+  const handleLoadMore = async () => {
+    if (!hasMore || loading || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    await fetchBookings(page + 1, 50, { search: searchQuery, status: statusFilter, showPending });
+    setIsLoadingMore(false);
+  };
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
@@ -48,9 +60,9 @@ export const Bookings: React.FC = () => {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-100';
       case 'confirmed':
-        return 'bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-100';
-      case 'checked_in':
         return 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-100';
+      case 'checked_in':
+        return 'bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-100';
       case 'completed':
         return 'bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-100';
       case 'cancelled':
@@ -73,8 +85,8 @@ export const Bookings: React.FC = () => {
     { label: 'Bookings' }
   ];
 
-  // Loading state
-  if (!initialized || loading) {
+  // Loading state - only show full loading screen on initial load
+  if (!initialized) {
     return (
       <AdminLayout showSidebar showHeader breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center h-full p-8">
@@ -108,33 +120,33 @@ export const Bookings: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <KPICard
             title="Total Bookings"
-            value={bookings.length}
-            loading={loading}
+            value={stats?.total || 0}
+            loading={!stats}
           />
           <KPICard
             title="Pending"
-            value={bookings.filter(b => b.status === 'pending').length}
-            loading={loading}
+            value={stats?.pending || 0}
+            loading={!stats}
           />
           <KPICard
             title="Confirmed"
-            value={bookings.filter(b => b.status === 'confirmed').length}
-            loading={loading}
+            value={stats?.confirmed || 0}
+            loading={!stats}
           />
           <KPICard
             title="Checked In"
-            value={bookings.filter(b => b.status === 'checked_in').length}
-            loading={loading}
+            value={stats?.checked_in || 0}
+            loading={!stats}
           />
           <KPICard
             title="Completed"
-            value={bookings.filter(b => b.status === 'completed').length}
-            loading={loading}
+            value={stats?.completed || 0}
+            loading={!stats}
           />
         </div>
 
         {/* Filters */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
             <Input
@@ -158,6 +170,15 @@ export const Bookings: React.FC = () => {
               <SelectItem value="cancelled" className="cursor-pointer">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+          <label className="flex items-center gap-2 cursor-pointer border rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={showPending}
+              onChange={(e) => setShowPending(e.target.checked)}
+              className="cursor-pointer w-4 h-4"
+            />
+            <span className="text-sm whitespace-nowrap">Show Pending</span>
+          </label>
         </div>
 
         {/* Error State */}
@@ -168,7 +189,13 @@ export const Bookings: React.FC = () => {
         )}
 
         {/* Bookings Table */}
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-hidden relative">
+          {loading && bookings.length > 0 && (
+            <div className="absolute top-0 left-0 right-0 z-10 bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center gap-2">
+              <Spinner className="h-4 w-4 text-primary" />
+              <span className="text-sm text-primary font-medium">Updating results...</span>
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -180,7 +207,7 @@ export const Bookings: React.FC = () => {
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className={loading && bookings.length > 0 ? 'opacity-60 pointer-events-none' : ''}>
               {bookings.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
@@ -240,9 +267,9 @@ export const Bookings: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold">£{booking.total.toFixed(2)}</div>
+                      <div className="font-semibold">£{(booking.total / 100).toFixed(2)}</div>
                       <div className="text-xs text-muted-foreground">
-                        VAT: £{booking.vat.toFixed(2)}
+                        VAT: £{(booking.vat / 100).toFixed(2)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -256,6 +283,34 @@ export const Bookings: React.FC = () => {
             </TableBody>
           </Table>
         </div>
+
+        {/* Load More / Pagination */}
+        {hasMore && bookings.length > 0 && (
+          <div className="flex justify-center py-6">
+            <Button
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              variant="outline"
+              className="cursor-pointer"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Spinner className="h-4 w-4 mr-2" />
+                  Loading more...
+                </>
+              ) : (
+                'Load More Bookings'
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* End of results message */}
+        {!hasMore && bookings.length > 0 && (
+          <div className="text-center py-6 text-sm text-muted-foreground">
+            You've reached the end of the list
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
