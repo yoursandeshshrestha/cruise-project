@@ -80,20 +80,20 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   },
 
   /**
-   * Get pricing rule for a specific date (useful for seasonal pricing)
-   * Returns the active rule that matches the date range, or null if none found
+   * Get pricing rule for a specific date with priority system
+   * Priority 1 (custom pricing) overrides Priority 2 (standard pricing)
+   * Returns the highest priority active rule that matches the date range
    */
   getPricingForDate: (date: Date) => {
     const state = get();
+    const targetDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-    // Find active rules that match the date range
-    const matchingRule = state.pricingRules.find(rule => {
+    // Find all active rules that match the date range
+    const matchingRules = state.pricingRules.filter(rule => {
       if (!rule.is_active) return false;
 
-      // If no date range specified, it's a default rule
+      // If no date range specified, it's a year-round rule (standard pricing)
       if (!rule.start_date && !rule.end_date) return true;
-
-      const targetDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
 
       // Check if date falls within range
       const afterStart = !rule.start_date || targetDate >= rule.start_date;
@@ -102,7 +102,26 @@ export const usePricingStore = create<PricingState>((set, get) => ({
       return afterStart && beforeEnd;
     });
 
-    return matchingRule || null;
+    // Sort by priority (ascending: 1 = highest priority, 2 = lowest priority)
+    // If multiple rules have the same priority, prefer the one with more specific date range
+    matchingRules.sort((a, b) => {
+      const priorityA = a.priority || 2;
+      const priorityB = b.priority || 2;
+
+      // First compare by priority
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // If same priority, prefer rules with date ranges (more specific)
+      const hasRangeA = a.start_date && a.end_date ? 1 : 0;
+      const hasRangeB = b.start_date && b.end_date ? 1 : 0;
+
+      return hasRangeB - hasRangeA;
+    });
+
+    // Return the highest priority matching rule
+    return matchingRules[0] || null;
   },
 
   createPricingRule: async (data: PricingRuleInsert) => {
