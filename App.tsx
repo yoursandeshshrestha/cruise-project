@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Home } from './pages/client/Home';
 import { BookingFlow } from './pages/client/BookingFlow';
+import { BookingSuccess } from './pages/client/BookingSuccess';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLogin } from './pages/admin/Login';
 import { HowItWorks } from './pages/client/HowItWorks';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
         {/* Client Routes - wrapped with maintenance check */}
         <Route path="/" element={<MaintenanceWrapper><Home /></MaintenanceWrapper>} />
         <Route path="/book" element={<MaintenanceWrapper><BookingFlow /></MaintenanceWrapper>} />
+        <Route path="/booking-success" element={<MaintenanceWrapper><BookingSuccess /></MaintenanceWrapper>} />
         <Route path="/how-it-works" element={<MaintenanceWrapper><HowItWorks /></MaintenanceWrapper>} />
         <Route path="/services" element={<MaintenanceWrapper><Services /></MaintenanceWrapper>} />
         <Route path="/prices" element={<MaintenanceWrapper><Prices /></MaintenanceWrapper>} />
