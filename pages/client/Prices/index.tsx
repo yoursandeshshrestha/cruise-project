@@ -64,37 +64,21 @@ export const Prices: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    <tr className="hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-700">First Day</td>
-                      <td className="p-3 text-right font-bold text-brand-dark">£{FIRST_DAY_RATE.toFixed(2)}</td>
-                      <td className="p-3 text-right font-bold text-amber-700">
-                        £{(Math.round(FIRST_DAY_RATE * VAN_SURCHARGE_MULTIPLIER * 100) / 100).toFixed(2)}
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-700">Each Additional Day</td>
-                      <td className="p-3 text-right font-bold text-brand-dark">£{ADDITIONAL_DAY_RATE.toFixed(2)}</td>
-                      <td className="p-3 text-right font-bold text-amber-700">
-                        £{(Math.round(ADDITIONAL_DAY_RATE * VAN_SURCHARGE_MULTIPLIER * 100) / 100).toFixed(2)}
-                      </td>
-                    </tr>
+                    {[1, 2, 3, 4, 5, 6, 7, 14, 21, 28].map((days) => {
+                      const carPrice = FIRST_DAY_RATE + (days - 1) * ADDITIONAL_DAY_RATE;
+                      const vanPrice = Math.round(carPrice * VAN_SURCHARGE_MULTIPLIER * 100) / 100;
+                      const label = days === 7 ? '1 Week' : days === 14 ? '2 Weeks' : days === 21 ? '3 Weeks' : days === 28 ? '4 Weeks' : `${days} Day${days > 1 ? 's' : ''}`;
+
+                      return (
+                        <tr key={days} className="hover:bg-gray-50">
+                          <td className="p-3 font-medium text-gray-700">{label}</td>
+                          <td className="p-3 text-right font-bold text-brand-dark">£{carPrice.toFixed(2)}</td>
+                          <td className="p-3 text-right font-bold text-amber-700">£{vanPrice.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-              </div>
-
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-brand-dark font-medium mb-2">Example Prices (Car)</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                  {[3, 7, 10, 14].map(days => {
-                    const price = FIRST_DAY_RATE + (days - 1) * ADDITIONAL_DAY_RATE;
-                    return (
-                      <div key={days} className="text-center">
-                        <span className="block text-gray-500">{days} days</span>
-                        <span className="font-bold text-brand-dark">£{price.toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
               <div className="mt-4 flex items-start gap-2 text-xs text-gray-500">
