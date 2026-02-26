@@ -18,7 +18,6 @@ ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
 -- Grant permissions to anon role
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT INSERT, SELECT ON TABLE contact_submissions TO anon;
-GRANT USAGE, SELECT ON SEQUENCE contact_submissions_id_seq TO anon;
 
 -- Grant full permissions to authenticated role
 GRANT ALL ON TABLE contact_submissions TO authenticated;
