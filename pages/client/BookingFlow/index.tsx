@@ -28,6 +28,7 @@ import { ParkingOptionsStep } from './components/ParkingOptionsStep';
 import { CustomerDetailsStep } from './components/CustomerDetailsStep';
 import { PaymentStep } from './components/PaymentStep';
 import { ConfirmationStep } from './components/ConfirmationStep';
+import { Modal } from '../../../components/client/Modal';
 
 const INITIAL_STATE: BookingState = {
   dropOffDate: '',
@@ -56,12 +57,15 @@ export const BookingFlow: React.FC = () => {
   const [booking, setBooking] = useState<BookingState>(INITIAL_STATE);
   const [bookingReference, setBookingReference] = useState<string>('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [showUnavailableModal, setShowUnavailableModal] = useState(false);
+  const [unavailableMessage, setUnavailableMessage] = useState('');
 
   // Stores
   const { cruiseLines, fetchActiveCruiseLines } = useCruiseLinesStore();
   const { createBooking, generateBookingReference } = useBookingsStore();
   const { addOns, parsedSettings, fetchSettings, fetchAddOns } = useSettingsStore();
-  const { getCancellationPolicy } = useSystemSettingsStore();
+  const { getCancellationPolicy, fetchSettings: fetchSystemSettings, isBookingEnabled, isMaintenanceMode, isPromoCodeEnabled } = useSystemSettingsStore();
   const { terminals, fetchActiveTerminals } = useTerminalsStore();
   const { validatePromoCode: validatePromoCodeStore, incrementPromoCodeUsage } = usePromoCodesStore();
   const { getAddOns, clearCart } = useBookingCartStore();
@@ -116,7 +120,8 @@ export const BookingFlow: React.FC = () => {
     fetchSettings();
     fetchAddOns();
     fetchPricingRules();
-  }, [fetchActiveCruiseLines, fetchActiveTerminals, fetchSettings, fetchAddOns, fetchPricingRules]);
+    fetchSystemSettings(); // Fetch system settings to check if booking is enabled
+  }, [fetchActiveCruiseLines, fetchActiveTerminals, fetchSettings, fetchAddOns, fetchPricingRules, fetchSystemSettings]);
 
   // Parse query params on load
   useEffect(() => {
@@ -173,6 +178,13 @@ export const BookingFlow: React.FC = () => {
 
   // Handle promo code application
   const handleApplyPromoClick = () => {
+    // Check if promo codes are enabled
+    if (!isPromoCodeEnabled()) {
+      setUnavailableMessage('Promo codes are currently disabled. Please proceed without a promo code or contact us for assistance.');
+      setShowUnavailableModal(true);
+      return;
+    }
+
     // Calculate subtotal before discount
     const subtotal = calculations.finalTotal + promoDiscount;
     handleApplyPromo(booking.promoCode, subtotal);
@@ -186,9 +198,40 @@ export const BookingFlow: React.FC = () => {
 
   // Navigation
   const nextStep = async () => {
+    // Check booking availability before every step transition
+    setIsCheckingAvailability(true);
+
+    // Refetch settings to ensure we have the latest data
+    await fetchSystemSettings();
+    const stillEnabled = isBookingEnabled();
+    const inMaintenanceMode = isMaintenanceMode();
+
+    if (!stillEnabled || inMaintenanceMode) {
+      setIsCheckingAvailability(false);
+      if (inMaintenanceMode) {
+        if (step === 4) {
+          setUnavailableMessage('The system is currently undergoing maintenance. Your payment was not processed. Please try again later or contact us for assistance.');
+        } else {
+          setUnavailableMessage('The system is currently undergoing maintenance. Please try again later or contact us for assistance.');
+        }
+      } else {
+        if (step === 4) {
+          setUnavailableMessage('Booking has been temporarily disabled. Your payment was not processed. Please contact us directly for assistance.');
+        } else {
+          setUnavailableMessage('Booking has been temporarily disabled. Please contact us directly for assistance.');
+        }
+      }
+      setShowUnavailableModal(true);
+      return;
+    }
+
+    // If we're at step 4, proceed with payment submission
     if (step === 4) {
       await handleBookingSubmit();
+      setIsCheckingAvailability(false);
     } else {
+      // Otherwise, just move to next step
+      setIsCheckingAvailability(false);
       setStep(prev => Math.min(prev + 1, 5) as BookingStep);
     }
   };
@@ -197,14 +240,57 @@ export const BookingFlow: React.FC = () => {
 
   // Determine if next button should be disabled
   const isNextDisabled = () => {
-    if (isProcessing) return true;
+    if (isProcessing || isCheckingAvailability) return true;
     if (step === 1 && !isStep1Valid()) return true;
     if (step === 3 && !isStep3Valid()) return true;
     if (step === 4 && !termsAccepted) return true;
     return false;
   };
 
+  // Check if booking is enabled and not in maintenance mode on page load
+  const bookingEnabled = isBookingEnabled();
+  const maintenanceMode = isMaintenanceMode();
+
+  // Show booking unavailable page if disabled or in maintenance
+  if (!bookingEnabled || maintenanceMode) {
+    return (
+      <>
+      <Layout hideFooter>
+        <div className="min-h-screen bg-neutral-light flex items-center justify-center px-4">
+          <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-light text-center">
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-brand-dark mb-4">
+              {maintenanceMode ? 'System Maintenance' : 'Booking Currently Unavailable'}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {maintenanceMode
+                ? 'The system is currently undergoing maintenance. Please check back later or contact us directly for assistance.'
+                : "We're sorry, but online booking is temporarily unavailable. Please check back later or contact us directly for assistance."
+              }
+            </p>
+            <div className="space-y-3">
+              <a href="/" className="block">
+                <Button className="w-full cursor-pointer">Return to Home</Button>
+              </a>
+              <a href="/contact" className="block">
+                <Button variant="secondary" className="w-full cursor-pointer">Contact Us</Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </Layout>
+      </>
+    );
+  }
+
   return (
+    <>
     <Layout hideFooter>
       <div className="min-h-screen bg-neutral-light pb-20">
         <LoadingOverlay isVisible={isProcessing} />
@@ -246,6 +332,7 @@ export const BookingFlow: React.FC = () => {
                     appliedPromoCode={appliedPromoCode}
                     promoMessage={promoMessage}
                     isValidatingPromo={isValidatingPromo}
+                    isPromoCodeEnabled={isPromoCodeEnabled()}
                     onApplyPromo={handleApplyPromoClick}
                     onRemovePromo={handleRemovePromoClick}
                   />
@@ -268,7 +355,9 @@ export const BookingFlow: React.FC = () => {
                     <div></div>
                   )}
                   <Button onClick={nextStep} disabled={isNextDisabled()}>
-                    {isProcessing
+                    {isCheckingAvailability
+                      ? 'Checking availability...'
+                      : isProcessing
                       ? 'Redirecting to Payment...'
                       : step === 4
                       ? 'Proceed to Payment'
@@ -296,5 +385,32 @@ export const BookingFlow: React.FC = () => {
         )}
       </div>
     </Layout>
+
+    {/* Booking Unavailable Modal */}
+    <Modal
+      isOpen={showUnavailableModal}
+      onClose={() => setShowUnavailableModal(false)}
+      title={
+        unavailableMessage.includes('Promo code')
+          ? 'Promo Codes Unavailable'
+          : unavailableMessage.includes('maintenance')
+          ? 'System Maintenance'
+          : 'Booking Currently Unavailable'
+      }
+      showCloseButton={unavailableMessage.includes('Promo code')}
+    >
+      <p className="mb-6">{unavailableMessage}</p>
+      {!unavailableMessage.includes('Promo code') && (
+        <div className="flex flex-col gap-3">
+          <a href="/" className="block">
+            <Button className="w-full cursor-pointer">Return to Home</Button>
+          </a>
+          <a href="/contact" className="block">
+            <Button variant="secondary" className="w-full cursor-pointer">Contact Us</Button>
+          </a>
+        </div>
+      )}
+    </Modal>
+    </>
   );
 };
