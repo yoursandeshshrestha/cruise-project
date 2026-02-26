@@ -75,12 +75,12 @@ CREATE POLICY "terminals_delete_authenticated"
 -- =============================================================================
 
 -- Seed default terminals
-INSERT INTO terminals (name, code, location, is_active, display_order) VALUES
-  ('Ocean Terminal', 'OCN', 'Southampton', true, 1),
-  ('Mayflower Terminal', 'MF', 'Southampton', true, 2),
-  ('City Cruise Terminal', 'CC', 'Southampton', true, 3),
-  ('QEII Terminal', 'QEII', 'Southampton', true, 4),
-  ('Horizon Cruise Terminal', 'HOR', 'Southampton', true, 5);
+INSERT INTO terminals (name, code, location, description, is_active, display_order) VALUES
+  ('Ocean Terminal', 'OCN', 'Southampton', 'Modern cruise terminal with excellent facilities and easy access to the city center. Ideal for large cruise ships.', true, 1),
+  ('Mayflower Terminal', 'MF', 'Southampton', 'Historic terminal named after the famous Mayflower ship. Features convenient parking and passenger amenities.', true, 2),
+  ('City Cruise Terminal', 'CC', 'Southampton', 'Located in the heart of Southampton, offering quick access to local attractions and transport links.', true, 3),
+  ('QEII Terminal', 'QEII', 'Southampton', 'Named after the Queen Elizabeth II. Premium terminal with luxury facilities for international cruise departures.', true, 4),
+  ('Horizon Cruise Terminal', 'HOR', 'Southampton', 'State-of-the-art terminal designed for modern cruise operations with comprehensive passenger services.', true, 5);
 
 -- =============================================================================
 -- COMMENTS
