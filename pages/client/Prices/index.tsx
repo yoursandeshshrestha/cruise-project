@@ -5,29 +5,56 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, Zap, Droplets, Sparkles, Clock, Calendar, Truck } from 'lucide-react';
 import { useAddOnsStore } from '../../../stores/addOnsStore';
 import { useBookingCartStore } from '../../../stores/bookingCartStore';
-import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE, VAN_SURCHARGE_MULTIPLIER } from '../../../constants';
+import { usePricingStore } from '../../../stores/pricingStore';
+import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE } from '../../../constants';
 
 export const Prices: React.FC = () => {
   const navigate = useNavigate();
   const { addOns, fetchActiveAddOns } = useAddOnsStore();
   const { addAddOn } = useBookingCartStore();
+  const { pricingRules, fetchPricingRules, initialized } = usePricingStore();
 
   useEffect(() => {
     fetchActiveAddOns();
-  }, [fetchActiveAddOns]);
+    if (!initialized) {
+      fetchPricingRules();
+    }
+  }, [fetchActiveAddOns, fetchPricingRules, initialized]);
 
-  // Pricing tiers with weekly bulk discounts
+  // Filter only active pricing rules and sort by priority (Standard Pricing first)
+  const activePricingRules = pricingRules
+    .filter(rule => rule.is_active)
+    .sort((a, b) => (b.priority || 1) - (a.priority || 1)); // Descending order: priority 2 first, then 1
+
+  // Get the standard pricing (priority 2) or first active rule as fallback
+  const standardPricing = activePricingRules.find(rule => rule.priority === 2) || activePricingRules[0];
+
+  // Get pricing configuration from standard pricing rule
+  const baseCarPrice = standardPricing?.base_car_price || FIRST_DAY_RATE;
+  const baseVanPrice = standardPricing?.base_van_price || 36.00;
+  const additionalDayRate = standardPricing?.additional_day_rate || ADDITIONAL_DAY_RATE;
+  const vanAdditionalDayRate = standardPricing?.additional_day_rate_van || 18.00;
+
+  // Linear pricing: Base price + (days - 1) × additional day rate
+  const calculateCarPrice = (days: number) => baseCarPrice + ((days - 1) * additionalDayRate);
+  const calculateVanPrice = (days: number) => baseVanPrice + ((days - 1) * vanAdditionalDayRate);
+
+  // Calculate van surcharge percentage (using 1-day as reference)
+  const vanSurchargePercent = baseCarPrice > 0
+    ? Math.round(((baseVanPrice - baseCarPrice) / baseCarPrice) * 100)
+    : 40;
+
   const pricingTiers = [
-    { days: 1, carPrice: 26.00, label: '1 Day' },
-    { days: 2, carPrice: 39.00, label: '2 Days' },
-    { days: 3, carPrice: 52.00, label: '3 Days' },
-    { days: 4, carPrice: 65.00, label: '4 Days' },
-    { days: 5, carPrice: 78.00, label: '5 Days' },
-    { days: 6, carPrice: 91.00, label: '6 Days' },
-    { days: 7, carPrice: 95.00, label: '1 Week' },
-    { days: 14, carPrice: 160.00, label: '2 Weeks' },
-    { days: 21, carPrice: 220.00, label: '3 Weeks' },
-    { days: 28, carPrice: 310.00, label: '4 Weeks' },
+    { days: 1, carPrice: calculateCarPrice(1), label: '1 Day' },
+    { days: 2, carPrice: calculateCarPrice(2), label: '2 Days' },
+    { days: 3, carPrice: calculateCarPrice(3), label: '3 Days' },
+    { days: 4, carPrice: calculateCarPrice(4), label: '4 Days' },
+    { days: 5, carPrice: calculateCarPrice(5), label: '5 Days' },
+    { days: 6, carPrice: calculateCarPrice(6), label: '6 Days' },
+    { days: 7, carPrice: calculateCarPrice(7), label: '1 Week' },
+    { days: 14, carPrice: calculateCarPrice(14), label: '2 Weeks' },
+    { days: 21, carPrice: calculateCarPrice(21), label: '3 Weeks' },
+    { days: 28, carPrice: calculateCarPrice(28), label: '4 Weeks' },
   ];
 
   const getIconComponent = (slug: string) => {
@@ -54,89 +81,154 @@ export const Prices: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-          
-          {/* Pricing Table Card */}
-          <div className="bg-white rounded-2xl shadow-medium border border-gray-100 overflow-hidden col-span-1 md:col-span-2">
-            <div className="p-8">
-              <h2 className="text-2xl font-bold text-brand-dark mb-2">Park & Ride Pricing</h2>
-              <p className="text-gray-600 mb-6">
-                All prices include secure parking and free shuttle transfers for all passengers.
-              </p>
-
-              <div className="overflow-hidden rounded-lg border border-gray-200">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left p-3 font-semibold text-brand-dark">Duration</th>
-                      <th className="text-right p-3 font-semibold text-brand-dark">Car</th>
-                      <th className="text-right p-3 font-semibold text-amber-700">
-                        <span className="flex items-center justify-end gap-1">
-                          <Truck size={14} /> Van (+40%)
-                        </span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {pricingTiers.map((tier) => {
-                      const vanPrice = Math.round(tier.carPrice * VAN_SURCHARGE_MULTIPLIER * 100) / 100;
-
-                      return (
-                        <tr key={tier.days} className="hover:bg-gray-50">
-                          <td className="p-3 font-medium text-gray-700">{tier.label}</td>
-                          <td className="p-3 text-right font-bold text-brand-dark">£{tier.carPrice.toFixed(2)}</td>
-                          <td className="p-3 text-right font-bold text-amber-700">£{vanPrice.toFixed(2)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-4 flex items-start gap-2 text-xs text-gray-500">
-                <Truck size={14} className="shrink-0 mt-0.5 text-amber-600" />
-                <p>Vans take up 1.5 parking spaces, so a 40% surcharge applies to the parking cost.</p>
-              </div>
-
-              <div className="mt-6">
-                <Link to="/book">
-                  <Button>Get a Quote</Button>
-                </Link>
-              </div>
-            </div>
+        {/* Display all active pricing rules */}
+        {activePricingRules.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-medium border border-gray-100 p-8 mb-20">
+            <p className="text-center text-gray-500">No pricing available at this time.</p>
           </div>
+        ) : (
+          <div className="space-y-8 mb-20">
+            {activePricingRules.map((pricingRule) => {
+              const isStandardPricing = pricingRule.priority === 2;
+              const ruleBaseCarPrice = pricingRule.base_car_price || FIRST_DAY_RATE;
+              const ruleBaseVanPrice = pricingRule.base_van_price || 36.00;
+              const ruleAdditionalDayRate = pricingRule.additional_day_rate || ADDITIONAL_DAY_RATE;
+              const ruleVanAdditionalDayRate = pricingRule.additional_day_rate_van || 18.00;
 
-          {/* Value Proposition */}
-          <div className="bg-brand-dark rounded-2xl p-8 text-white flex flex-col justify-center">
-            <h3 className="text-xl font-bold mb-4">Why book direct?</h3>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <Clock className="text-primary shrink-0" />
-                <span className="text-sm text-gray-300">Best price guarantee when you book directly through our website.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Calendar className="text-primary shrink-0" />
-                <span className="text-sm text-gray-300">Priority booking management and instant confirmation.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Sparkles className="text-primary shrink-0" />
-                <span className="text-sm text-gray-300">Exclusive access to valet and EV charging add-ons.</span>
-              </li>
-            </ul>
+              const calculateRuleCarPrice = (days: number) => ruleBaseCarPrice + ((days - 1) * ruleAdditionalDayRate);
+              const calculateRuleVanPrice = (days: number) => ruleBaseVanPrice + ((days - 1) * ruleVanAdditionalDayRate);
+
+              const ruleVanSurchargePercent = ruleBaseCarPrice > 0
+                ? Math.round(((ruleBaseVanPrice - ruleBaseCarPrice) / ruleBaseCarPrice) * 100)
+                : 40;
+
+              const rulePricingTiers = [
+                { days: 1, carPrice: calculateRuleCarPrice(1), label: '1 Day' },
+                { days: 2, carPrice: calculateRuleCarPrice(2), label: '2 Days' },
+                { days: 3, carPrice: calculateRuleCarPrice(3), label: '3 Days' },
+                { days: 4, carPrice: calculateRuleCarPrice(4), label: '4 Days' },
+                { days: 5, carPrice: calculateRuleCarPrice(5), label: '5 Days' },
+                { days: 6, carPrice: calculateRuleCarPrice(6), label: '6 Days' },
+                { days: 7, carPrice: calculateRuleCarPrice(7), label: '1 Week' },
+                { days: 14, carPrice: calculateRuleCarPrice(14), label: '2 Weeks' },
+                { days: 21, carPrice: calculateRuleCarPrice(21), label: '3 Weeks' },
+                { days: 28, carPrice: calculateRuleCarPrice(28), label: '4 Weeks' },
+              ];
+
+              return (
+                <div key={pricingRule.id} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {/* Pricing Table Card */}
+                  <div className={`bg-white rounded-2xl shadow-medium border overflow-hidden col-span-1 md:col-span-2 ${
+                    isStandardPricing ? 'border-blue-200' : 'border-purple-200'
+                  }`}>
+                    <div className="p-8">
+                      <div className="mb-4">
+                        <h2 className="text-2xl font-bold text-brand-dark mb-1 flex items-center gap-2">
+                          {pricingRule.name}
+                          {isStandardPricing && (
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                              Standard
+                            </span>
+                          )}
+                        </h2>
+                        {!isStandardPricing && pricingRule.start_date && pricingRule.end_date && (
+                          <p className="text-sm text-purple-700 font-medium">
+                            Valid: {new Date(pricingRule.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} - {new Date(pricingRule.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        )}
+                        {isStandardPricing && (
+                          <p className="text-sm text-blue-700 font-medium">Year-round standard pricing</p>
+                        )}
+                      </div>
+
+                      {pricingRule.reason && (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-700">{pricingRule.reason}</p>
+                        </div>
+                      )}
+
+                      <p className="text-gray-600 mb-6">
+                        All prices include secure parking and free shuttle transfers for all passengers.
+                      </p>
+
+                      <div className="overflow-hidden rounded-lg border border-gray-200">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="text-left p-3 font-semibold text-brand-dark">Duration</th>
+                              <th className="text-right p-3 font-semibold text-brand-dark">Car</th>
+                              <th className="text-right p-3 font-semibold text-amber-700">
+                                <span className="flex items-center justify-end gap-1">
+                                  <Truck size={14} /> Van (+{ruleVanSurchargePercent}%)
+                                </span>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {rulePricingTiers.map((tier) => {
+                              const vanPrice = calculateRuleVanPrice(tier.days);
+
+                              return (
+                                <tr key={tier.days} className="hover:bg-gray-50">
+                                  <td className="p-3 font-medium text-gray-700">{tier.label}</td>
+                                  <td className="p-3 text-right font-bold text-brand-dark">£{tier.carPrice.toFixed(2)}</td>
+                                  <td className="p-3 text-right font-bold text-amber-700">£{vanPrice.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="mt-4 flex items-start gap-2 text-xs text-gray-500">
+                        <Truck size={14} className="shrink-0 mt-0.5 text-amber-600" />
+                        <p>Vans take up 1.5 parking spaces, so a {ruleVanSurchargePercent}% surcharge applies to the parking cost.</p>
+                      </div>
+
+                      <div className="mt-6">
+                        <Link to="/book">
+                          <Button className="cursor-pointer">Get a Quote</Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Value Proposition - Only show once for the first pricing rule */}
+                  {pricingRule === activePricingRules[0] && (
+                    <div className="bg-brand-dark rounded-2xl p-8 text-white flex flex-col justify-center">
+                      <h3 className="text-xl font-bold mb-4">Why book direct?</h3>
+                      <ul className="space-y-4">
+                        <li className="flex items-start gap-3">
+                          <Clock className="text-primary shrink-0" />
+                          <span className="text-sm text-gray-300">Best price guarantee when you book directly through our website.</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <Calendar className="text-primary shrink-0" />
+                          <span className="text-sm text-gray-300">Priority booking management and instant confirmation.</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <Sparkles className="text-primary shrink-0" />
+                          <span className="text-sm text-gray-300">Exclusive access to valet and EV charging add-ons.</span>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
+
 
         {/* What's Included */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-brand-dark mb-10 text-center">What's Included</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {[
               { label: 'Secure, CCTV monitored facility' },
               { label: 'Free shuttle to all terminals (10 mins)' },
               { label: 'Luggage assistance included' },
               { label: 'Flexible amendment policy' },
-              { label: 'Nightly security patrols' },
-              { label: 'ADT security system on site' },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-2 text-gray-700">
                 <Check size={18} className="text-green-500 shrink-0" />
@@ -186,7 +278,7 @@ export const Prices: React.FC = () => {
                 <tbody className="divide-y divide-gray-100">
                     <tr>
                         <td className="p-4 font-medium">Cost per week (approx)</td>
-                        <td className="p-4 text-center font-bold text-green-600">£104.00</td>
+                        <td className="p-4 text-center font-bold text-green-600">£{calculateCarPrice(7).toFixed(2)}</td>
                         <td className="p-4 text-center text-gray-500">£140.00+</td>
                     </tr>
                     <tr>
