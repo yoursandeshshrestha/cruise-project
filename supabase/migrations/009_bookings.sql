@@ -1,8 +1,14 @@
+-- =============================================================================
 -- Bookings Table
--- Main table for storing all parking reservations
--- Consolidated from: 002_create_bookings_table.sql + 018_fix_bookings_rls_consistent.sql
+-- =============================================================================
+-- Customer parking reservations with payment and status tracking
+-- RLS: Properly configured to allow anon users to create bookings (public form)
+--      and authenticated users (admins) to manage all bookings
+-- Created: 2026-02-26
+-- Replaces: Original 002 + fixes from 013-023
+-- =============================================================================
 
--- Create bookings table
+-- TABLE DEFINITION
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_reference VARCHAR(20) UNIQUE NOT NULL,
@@ -41,6 +47,7 @@ CREATE TABLE bookings (
   -- Payment
   stripe_payment_intent_id VARCHAR(255),
   stripe_charge_id VARCHAR(255),
+  stripe_checkout_session_id VARCHAR(255),
   payment_status VARCHAR(50),
 
   -- Status
@@ -64,7 +71,7 @@ CREATE TABLE bookings (
   CONSTRAINT valid_dates CHECK (return_datetime > drop_off_datetime)
 );
 
--- Indexes for performance
+-- INDEXES
 CREATE INDEX idx_bookings_reference ON bookings(booking_reference);
 CREATE INDEX idx_bookings_email ON bookings(email);
 CREATE INDEX idx_bookings_status ON bookings(status);
@@ -72,57 +79,72 @@ CREATE INDEX idx_bookings_drop_off ON bookings(drop_off_datetime);
 CREATE INDEX idx_bookings_return ON bookings(return_datetime);
 CREATE INDEX idx_bookings_vehicle_reg ON bookings(vehicle_registration);
 CREATE INDEX idx_bookings_dates ON bookings(drop_off_datetime, return_datetime);
+CREATE INDEX idx_bookings_checkout_session ON bookings(stripe_checkout_session_id);
 
--- Auto-update updated_at timestamp
+-- TRIGGER
 CREATE TRIGGER update_bookings_updated_at
   BEFORE UPDATE ON bookings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
 
 -- =============================================================================
--- ROW LEVEL SECURITY (RLS)
+-- ROW LEVEL SECURITY - PROPERLY CONFIGURED
 -- =============================================================================
+-- This is the FINAL WORKING configuration from migration 021
+-- Key insight: RLS policies need table-level GRANTs to work properly
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
--- Policy 1: Anonymous users can create bookings (public booking form)
-CREATE POLICY "bookings_insert_anon"
+-- CRITICAL: Grant table-level permissions BEFORE creating policies
+GRANT SELECT, INSERT ON TABLE bookings TO anon;
+GRANT ALL ON TABLE bookings TO authenticated;
+
+-- Anon users: Can INSERT (create bookings via public form)
+CREATE POLICY "anon_can_insert_bookings"
   ON bookings
+  AS PERMISSIVE
   FOR INSERT
   TO anon
   WITH CHECK (true);
 
--- Policy 2: Anonymous users can view bookings (for booking lookup by reference/email)
-CREATE POLICY "bookings_select_anon"
+-- Anon users: Can SELECT (view their booking via lookup)
+CREATE POLICY "anon_can_select_bookings"
   ON bookings
+  AS PERMISSIVE
   FOR SELECT
   TO anon
   USING (true);
 
--- Policy 3: Authenticated users can view all bookings
-CREATE POLICY "bookings_select_authenticated"
+-- Authenticated users: Can SELECT all bookings
+CREATE POLICY "auth_can_select_bookings"
   ON bookings
+  AS PERMISSIVE
   FOR SELECT
   TO authenticated
   USING (true);
 
--- Policy 4: Authenticated users can update bookings
-CREATE POLICY "bookings_update_authenticated"
+-- Authenticated users: Can UPDATE bookings
+CREATE POLICY "auth_can_update_bookings"
   ON bookings
+  AS PERMISSIVE
   FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
--- Policy 5: Authenticated users can delete bookings
-CREATE POLICY "bookings_delete_authenticated"
+-- Authenticated users: Can DELETE bookings
+CREATE POLICY "auth_can_delete_bookings"
   ON bookings
+  AS PERMISSIVE
   FOR DELETE
   TO authenticated
   USING (true);
 
--- =============================================================================
 -- COMMENTS
--- =============================================================================
-
-COMMENT ON TABLE bookings IS 'Bookings table - RLS enabled with anon (create/read) and authenticated (full CRUD) policies';
+COMMENT ON TABLE bookings IS 'Customer parking bookings - RLS: anon (INSERT+SELECT), authenticated (full CRUD)';
+COMMENT ON COLUMN bookings.booking_reference IS 'Unique reference (SCP-XXXX) for customer lookup';
+COMMENT ON COLUMN bookings.add_ons IS 'JSONB array of add-on IDs selected by customer';
+COMMENT ON COLUMN bookings.subtotal IS 'Price before VAT in pence';
+COMMENT ON COLUMN bookings.vat IS 'VAT amount in pence';
+COMMENT ON COLUMN bookings.total IS 'Final price including VAT and discounts in pence';
+COMMENT ON COLUMN bookings.stripe_checkout_session_id IS 'Stripe Checkout Session ID for redirect payment flow';
