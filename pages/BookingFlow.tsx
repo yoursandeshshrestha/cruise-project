@@ -7,6 +7,7 @@ import { Select } from '../components/Select';
 import { BookingState, BookingStep, ParkingType } from '../types';
 import { CRUISE_LINES, ADD_ONS, calculateParkingPrice } from '../constants';
 import { Check, ChevronRight, AlertCircle, Calendar, CreditCard, Lock } from 'lucide-react';
+import { useSystemSettingsStore } from '../stores/systemSettingsStore';
 
 const INITIAL_STATE: BookingState = {
   dropOffDate: '',
@@ -33,9 +34,19 @@ export const BookingFlow: React.FC = () => {
   const [step, setStep] = useState<BookingStep>(1);
   const [booking, setBooking] = useState<BookingState>(INITIAL_STATE);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'google' | 'apple'>('card');
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+
+  const { fetchSettings, isBookingEnabled, initialized, loading, version } = useSystemSettingsStore();
 
   // Get today's date in YYYY-MM-DD format for min date attributes
   const today = new Date().toISOString().split('T')[0];
+
+  // Fetch system settings on mount
+  useEffect(() => {
+    if (!initialized) {
+      fetchSettings();
+    }
+  }, [initialized, fetchSettings]);
 
   // Parse query params on load
   useEffect(() => {
@@ -86,7 +97,51 @@ export const BookingFlow: React.FC = () => {
     });
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 5) as BookingStep);
+  const nextStep = async () => {
+    const currentStep = step;
+    const nextStepNumber = Math.min(currentStep + 1, 5) as BookingStep;
+
+    console.log('[BookingFlow] nextStep called - current:', currentStep, 'next:', nextStepNumber);
+
+    // Check if booking is still enabled before proceeding to payment page (step 4)
+    if (currentStep === 3 && nextStepNumber === 4) {
+      setIsCheckingAvailability(true);
+      console.log('[BookingFlow] Checking booking availability before payment page...');
+
+      // Refetch settings to ensure we have the latest data
+      await fetchSettings();
+      const stillEnabled = isBookingEnabled();
+      console.log('[BookingFlow] Real-time check before payment page - enabled:', stillEnabled);
+
+      setIsCheckingAvailability(false);
+
+      if (!stillEnabled) {
+        alert('Booking has been temporarily disabled. Please contact us directly for assistance.');
+        return;
+      }
+    }
+
+    // Check if booking is still enabled before processing payment (step 4 -> 5)
+    if (currentStep === 4 && nextStepNumber === 5) {
+      setIsCheckingAvailability(true);
+      console.log('[BookingFlow] Checking booking availability before processing payment...');
+
+      // Refetch settings to ensure we have the latest data
+      await fetchSettings();
+      const stillEnabled = isBookingEnabled();
+      console.log('[BookingFlow] Real-time check before processing payment - enabled:', stillEnabled);
+
+      setIsCheckingAvailability(false);
+
+      if (!stillEnabled) {
+        alert('Booking has been temporarily disabled. Your payment was not processed. Please contact us directly for assistance.');
+        return;
+      }
+    }
+
+    setStep(nextStepNumber);
+  };
+
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1) as BookingStep);
 
   const renderStep1 = () => (
@@ -343,10 +398,53 @@ export const BookingFlow: React.FC = () => {
     </div>
   );
 
+  // Show loading state while checking settings
+  if (loading || !initialized || version === 0) {
+    return (
+      <Layout hideFooter>
+        <div className="min-h-screen bg-neutral-light flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const bookingEnabled = isBookingEnabled();
+
+  // Show booking unavailable message if booking is disabled
+  if (!bookingEnabled) {
+    return (
+      <Layout hideFooter>
+        <div className="min-h-screen bg-neutral-light flex items-center justify-center px-4">
+          <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-light text-center">
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-brand-dark mb-4">Booking Currently Unavailable</h2>
+            <p className="text-gray-600 mb-6">
+              We're sorry, but online booking is temporarily unavailable. Please check back later or contact us directly for assistance.
+            </p>
+            <div className="space-y-3">
+              <Link to="/" className="block">
+                <Button className="w-full">Return to Home</Button>
+              </Link>
+              <Link to="/contact" className="block">
+                <Button variant="secondary" className="w-full">Contact Us</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout hideFooter>
       <div className="min-h-screen bg-neutral-light pb-20">
-        
+
         {/* Progress Header */}
         <div className="bg-white border-b border-gray-200 sticky top-20 z-40">
           <div className="max-w-3xl mx-auto px-4 py-4">
@@ -360,7 +458,7 @@ export const BookingFlow: React.FC = () => {
               <span className={step >= 4 ? 'text-primary' : ''}>Payment</span>
             </div>
             <div className="w-full bg-gray-100 h-2 rounded-full mt-2">
-              <div 
+              <div
                 className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(step / 4) * 100}%` }}
               ></div>
@@ -382,12 +480,12 @@ export const BookingFlow: React.FC = () => {
               {step < 5 && (
                 <div className="flex justify-between mt-8 pt-8 border-t border-gray-100">
                     {step > 1 ? (
-                        <Button variant="secondary" onClick={prevStep}>Back</Button>
+                        <Button variant="secondary" onClick={prevStep} disabled={isCheckingAvailability}>Back</Button>
                     ) : (
                         <div></div>
                     )}
-                    <Button onClick={nextStep}>
-                        {step === 4 ? 'Pay Securely' : 'Next Step'}
+                    <Button onClick={nextStep} disabled={isCheckingAvailability}>
+                        {isCheckingAvailability ? 'Checking availability...' : (step === 4 ? 'Pay Securely' : 'Next Step')}
                     </Button>
                 </div>
               )}
