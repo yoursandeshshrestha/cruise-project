@@ -63,14 +63,24 @@ export const FIRST_DAY_RATE = 26;
 export const ADDITIONAL_DAY_RATE = 13;
 export const VAN_SURCHARGE_MULTIPLIER = 1.4;
 
-export function calculateParkingPrice(days: number, vehicleType: VehicleType = 'car'): number {
+export function calculateParkingPrice(
+  days: number,
+  vehicleType: VehicleType = 'car',
+  additionalDayRate: number = ADDITIONAL_DAY_RATE,
+  vanAdditionalDayRate: number = 18.00,
+  baseCarPrice: number = FIRST_DAY_RATE,
+  baseVanPrice: number = 36.00
+): number {
   if (days <= 0) return 0;
 
-  const basePrice = FIRST_DAY_RATE + Math.max(0, days - 1) * ADDITIONAL_DAY_RATE;
-
-  return vehicleType === 'van'
-    ? Math.round(basePrice * VAN_SURCHARGE_MULTIPLIER * 100) / 100
-    : basePrice;
+  // Linear pricing: Base price + (days - 1) × additional day rate
+  if (vehicleType === 'van') {
+    // Van: base van price + (days - 1) × van additional day rate
+    return baseVanPrice + ((days - 1) * vanAdditionalDayRate);
+  } else {
+    // Car: base car price + (days - 1) × car additional day rate
+    return baseCarPrice + ((days - 1) * additionalDayRate);
+  }
 }
 
 export function getParkingDaysLabel(days: number): string {
