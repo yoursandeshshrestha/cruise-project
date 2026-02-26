@@ -32,12 +32,11 @@ export const PricingForm: React.FC<PricingFormProps> = ({
   onSubmit,
   submitting,
 }) => {
-  const isStandardPricing = formData.name === 'Standard Pricing';
-  const isCustomPricing = formData.priority === 1;
+  const isStandardPricing = formData.name === 'Standard Pricing' || formData.priority === 2;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-[750px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{formData.id ? 'Edit Pricing Rule' : 'Add Pricing Rule'}</DialogTitle>
           <DialogDescription>
@@ -50,7 +49,7 @@ export const PricingForm: React.FC<PricingFormProps> = ({
         <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="space-y-4 py-4 px-1 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name" className="cursor-pointer">Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -67,131 +66,115 @@ export const PricingForm: React.FC<PricingFormProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price_per_day">Daily Rate (£) *</Label>
-                <Input
-                  id="price_per_day"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price_per_day}
-                  onChange={(e) => setFormData({ ...formData, price_per_day: e.target.value })}
-                  placeholder="12.50"
-                  required
-                />
+            {/* VAT Rate */}
+            <div className="space-y-2">
+              <Label htmlFor="vat_rate" className="cursor-pointer">VAT Rate (%) *</Label>
+              <Input
+                id="vat_rate"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={formData.vat_rate}
+                onChange={(e) => setFormData({ ...formData, vat_rate: e.target.value })}
+                placeholder="20"
+                required
+                className="max-w-xs"
+              />
+            </div>
+
+            {/* Tiered Pricing Configuration */}
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-gray-900">Tiered Pricing Configuration</div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="base_car_price" className="cursor-pointer">Base Car Price (1 Day) - £ *</Label>
+                  <Input
+                    id="base_car_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.base_car_price}
+                    onChange={(e) => setFormData({ ...formData, base_car_price: e.target.value })}
+                    placeholder="26.00"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="base_van_price" className="cursor-pointer">Base Van Price (1 Day) - £ *</Label>
+                  <Input
+                    id="base_van_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.base_van_price}
+                    onChange={(e) => setFormData({ ...formData, base_van_price: e.target.value })}
+                    placeholder="36.00"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="additional_day_rate" className="cursor-pointer">Car Extra Day Rate - £ *</Label>
+                  <Input
+                    id="additional_day_rate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.additional_day_rate}
+                    onChange={(e) => setFormData({ ...formData, additional_day_rate: e.target.value })}
+                    placeholder="13.00"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="additional_day_rate_van" className="cursor-pointer">Van Extra Day Rate - £ *</Label>
+                  <Input
+                    id="additional_day_rate_van"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.additional_day_rate_van}
+                    onChange={(e) => setFormData({ ...formData, additional_day_rate_van: e.target.value })}
+                    placeholder="18.00"
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="minimum_charge">Minimum (£) *</Label>
-                <Input
-                  id="minimum_charge"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.minimum_charge}
-                  onChange={(e) => setFormData({ ...formData, minimum_charge: e.target.value })}
-                  placeholder="45.00"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vat_rate">VAT Rate (%) *</Label>
-                <Input
-                  id="vat_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={formData.vat_rate}
-                  onChange={(e) => setFormData({ ...formData, vat_rate: e.target.value })}
-                  placeholder="20"
-                  required
-                />
+              <div className="text-xs text-muted-foreground">
+                Example: 7 days car = £{formData.base_car_price || '26.00'} + (6 × £{formData.additional_day_rate || '13.00'}) = £{(parseFloat(formData.base_car_price || '26') + (6 * parseFloat(formData.additional_day_rate || '13'))).toFixed(2)} | 7 days van = £{formData.base_van_price || '36.00'} + (6 × £{formData.additional_day_rate_van || '18.00'}) = £{(parseFloat(formData.base_van_price || '36') + (6 * parseFloat(formData.additional_day_rate_van || '18'))).toFixed(2)}
               </div>
             </div>
 
-            {/* Priority Info */}
-            {!formData.id && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                <div className="font-medium text-blue-900">Pricing Type</div>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="priority"
-                      value="2"
-                      checked={formData.priority === 2}
-                      onChange={() => setFormData({ ...formData, priority: 2, start_date: undefined, end_date: undefined })}
-                      className="cursor-pointer"
-                    />
-                    <span className="text-sm">Standard Pricing (Base Price)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="priority"
-                      value="1"
-                      checked={formData.priority === 1}
-                      onChange={() => setFormData({ ...formData, priority: 1 })}
-                      className="cursor-pointer"
-                    />
-                    <span className="text-sm">Custom Pricing (Date-Specific)</span>
-                  </label>
-                </div>
-                <p className="text-xs text-blue-700">
-                  {formData.priority === 2
-                    ? 'Standard pricing is the default base price used year-round.'
-                    : 'Custom pricing overrides standard pricing for specific date ranges.'}
-                </p>
-              </div>
-            )}
-
-            {/* Show priority as read-only when editing */}
-            {formData.id && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-slate-700">Priority Level</div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      {formData.priority === 2 ? 'Standard Pricing (Base Price)' : 'Custom Pricing (Date-Specific)'}
-                    </div>
-                  </div>
-                  <div className="px-3 py-1 bg-slate-200 text-slate-700 rounded text-sm font-medium">
-                    Priority {formData.priority}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Date Range - Required for custom pricing, hidden for standard */}
+            {/* Date Range - Only for custom pricing (priority 1) */}
             {formData.priority === 1 && (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="start_date">Start Date *</Label>
+                    <Label htmlFor="start_date" className="cursor-pointer">Start Date *</Label>
                     <DatePicker
                       date={formData.start_date}
                       onSelect={(date) => setFormData({ ...formData, start_date: date })}
                       placeholder="Select start date"
                     />
-                    <p className="text-xs text-muted-foreground">Required for custom pricing</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="end_date">End Date *</Label>
+                    <Label htmlFor="end_date" className="cursor-pointer">End Date *</Label>
                     <DatePicker
                       date={formData.end_date}
                       onSelect={(date) => setFormData({ ...formData, end_date: date })}
                       placeholder="Select end date"
                     />
-                    <p className="text-xs text-muted-foreground">Required for custom pricing</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reason">Reason (Optional)</Label>
+                  <Label htmlFor="reason" className="cursor-pointer">Reason (Optional)</Label>
                   <Input
                     id="reason"
                     value={formData.reason || ''}
@@ -205,6 +188,19 @@ export const PricingForm: React.FC<PricingFormProps> = ({
               </>
             )}
 
+            {/* Standard Pricing indicator */}
+            {isStandardPricing && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="text-sm text-blue-700 font-medium">
+                    Standard Pricing applies all year (no date restrictions)
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Active toggle - Only for custom pricing */}
             {!isStandardPricing && (
               <div className="flex items-center justify-between p-4 border border-slate-200 rounded">
                 <div>
@@ -218,6 +214,8 @@ export const PricingForm: React.FC<PricingFormProps> = ({
                 />
               </div>
             )}
+
+            {/* Standard Pricing always active indicator */}
             {isStandardPricing && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2">

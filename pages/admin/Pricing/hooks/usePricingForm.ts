@@ -3,9 +3,11 @@ import { PricingFormData, PricingRule } from '../types';
 
 const INITIAL_FORM_STATE: PricingFormData = {
   name: '',
-  price_per_day: '',
-  minimum_charge: '',
   vat_rate: '20',
+  base_car_price: '26.00',
+  base_van_price: '36.00',
+  additional_day_rate: '13.00',
+  additional_day_rate_van: '18.00',
   start_date: undefined,
   end_date: undefined,
   is_active: true,
@@ -22,9 +24,11 @@ export const usePricingForm = () => {
       setFormData({
         id: pricingRule.id,
         name: pricingRule.name,
-        price_per_day: (pricingRule.price_per_day / 100).toFixed(2),
-        minimum_charge: (pricingRule.minimum_charge / 100).toFixed(2),
         vat_rate: ((pricingRule.vat_rate || 0.20) * 100).toString(),
+        base_car_price: (pricingRule.base_car_price || 26.00).toFixed(2),
+        base_van_price: (pricingRule.base_van_price || 36.00).toFixed(2),
+        additional_day_rate: (pricingRule.additional_day_rate || 13.00).toFixed(2),
+        additional_day_rate_van: (pricingRule.additional_day_rate_van || 18.00).toFixed(2),
         start_date: pricingRule.start_date ? new Date(pricingRule.start_date) : undefined,
         end_date: pricingRule.end_date ? new Date(pricingRule.end_date) : undefined,
         is_active: pricingRule.is_active,

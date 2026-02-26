@@ -10,7 +10,6 @@ import {
 import { Button } from '../../../../components/admin/ui/button';
 import { Switch } from '../../../../components/admin/ui/switch';
 import { PricingRule } from '../types';
-import { formatCurrency, formatDateRange } from '../utils';
 
 interface PricingTableProps {
   pricingRules: PricingRule[];
@@ -32,10 +31,13 @@ export const PricingTable: React.FC<PricingTableProps> = ({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Priority</TableHead>
-            <TableHead>Daily Rate</TableHead>
-            <TableHead>Minimum</TableHead>
+            <TableHead>Car Price</TableHead>
+            <TableHead>Car Extra Day</TableHead>
+            <TableHead>Van Price</TableHead>
+            <TableHead>Van Extra Day</TableHead>
             <TableHead>VAT Rate</TableHead>
-            <TableHead>Date Range</TableHead>
+            <TableHead>Start Date</TableHead>
+            <TableHead>End Date</TableHead>
             <TableHead>Reason</TableHead>
             <TableHead className="w-[140px]">Status</TableHead>
             <TableHead className="text-right w-[180px]">Actions</TableHead>
@@ -44,7 +46,7 @@ export const PricingTable: React.FC<PricingTableProps> = ({
         <TableBody>
           {pricingRules.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                 No pricing rules found. Add your first pricing rule to get started.
               </TableCell>
             </TableRow>
@@ -63,21 +65,24 @@ export const PricingTable: React.FC<PricingTableProps> = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${
-                        rule.priority === 1
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        Priority {rule.priority || 2}
-                      </span>
-                    </div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded ${
+                      rule.priority === 1
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {rule.priority || 1}
+                    </span>
                   </TableCell>
-                  <TableCell>{formatCurrency(rule.price_per_day)}</TableCell>
-                  <TableCell>{formatCurrency(rule.minimum_charge)}</TableCell>
+                  <TableCell>£{(rule.base_car_price || 0).toFixed(2)}</TableCell>
+                  <TableCell>£{(rule.additional_day_rate || 0).toFixed(2)}</TableCell>
+                  <TableCell>£{(rule.base_van_price || 0).toFixed(2)}</TableCell>
+                  <TableCell>£{(rule.additional_day_rate_van || 0).toFixed(2)}</TableCell>
                   <TableCell>{((rule.vat_rate || 0.20) * 100).toFixed(0)}%</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {formatDateRange(rule.start_date, rule.end_date)}
+                    {rule.start_date ? new Date(rule.start_date).toLocaleDateString('en-GB') : (isStandardPricing ? 'All year' : '—')}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {rule.end_date ? new Date(rule.end_date).toLocaleDateString('en-GB') : (isStandardPricing ? 'All year' : '—')}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                     {rule.reason ? (
