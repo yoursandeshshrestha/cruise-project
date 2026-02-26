@@ -39,6 +39,7 @@ const INITIAL_STATE: BookingState = {
   shipName: '',
   terminal: '',
   selectedAddOns: [],
+  vehicleType: 'car',
   vehicleReg: '',
   vehicleMake: '',
   firstName: '',
@@ -82,7 +83,7 @@ export const BookingFlow: React.FC = () => {
     handleRemovePromo,
   } = usePromoCode(validatePromoCodeStore);
 
-  const calculations = useBookingCalculations(booking, parsedSettings, addOns, promoDiscount);
+  const calculations = useBookingCalculations(booking, parsedSettings, addOns, promoDiscount, activePricing);
   const { isStep1Valid, isStep3Valid } = useStepValidation(booking);
 
   const {
@@ -100,6 +101,7 @@ export const BookingFlow: React.FC = () => {
     createBooking,
     incrementPromoCodeUsage,
     generateBookingReference,
+    activePricing,
   });
 
   // Initialize Stripe on mount

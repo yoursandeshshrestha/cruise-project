@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookingState } from '../../../../types';
 import { createCheckoutSession } from '../../../../lib/stripe';
+import { calculateParkingPrice, ADDITIONAL_DAY_RATE } from '../../../../constants';
+import { usePricingStore } from '../../../../stores/pricingStore';
 
 interface Settings {
   dailyRate: number;
@@ -23,6 +25,7 @@ interface UseBookingSubmissionProps {
   createBooking: (data: Record<string, unknown>) => Promise<{ id: string } | null>;
   incrementPromoCodeUsage: (code: string) => Promise<void>;
   generateBookingReference: () => string;
+  activePricing?: { base_car_price?: number; base_van_price?: number; additional_day_rate?: number; additional_day_rate_van?: number } | null;
 }
 
 export const useBookingSubmission = ({
@@ -35,9 +38,18 @@ export const useBookingSubmission = ({
   createBooking,
   incrementPromoCodeUsage,
   generateBookingReference,
+  activePricing,
 }: UseBookingSubmissionProps) => {
+  const { getPricingForDate, fetchPricingRules, initialized } = usePricingStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string>('');
+
+  // Fetch pricing rules on mount if not initialized
+  useEffect(() => {
+    if (!initialized) {
+      fetchPricingRules();
+    }
+  }, [initialized, fetchPricingRules]);
 
   const handleBookingSubmit = async () => {
     setIsProcessing(true);
@@ -54,15 +66,45 @@ export const useBookingSubmission = ({
       // Calculate costs for database storage
       const vatRate = parsedSettings?.vatRate || 0.20;
 
-      // Recalculate parking and add-ons cost
+      // Recalculate parking cost using day-by-day pricing
       const start = new Date(booking.dropOffDate);
       const end = new Date(booking.returnDate);
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-      const dailyRate = parsedSettings?.dailyRate || 12.50;
-      const minStayCost = parsedSettings?.minimumStayCost || 45.00;
-      const parkingCost = Math.max(diffDays * dailyRate, minStayCost);
+      const isVan = booking.vehicleType === 'van';
+      let parkingCost = 0;
+
+      // Calculate cost for each individual day
+      for (let i = 0; i < diffDays; i++) {
+        const currentDate = new Date(start);
+        currentDate.setDate(currentDate.getDate() + i);
+
+        // Get pricing rule for this specific day
+        const dayPricing = getPricingForDate(currentDate) || {
+          id: 'default',
+          base_car_price: 26.00,
+          base_van_price: 36.00,
+          additional_day_rate: ADDITIONAL_DAY_RATE,
+          additional_day_rate_van: 18.00,
+        };
+
+        let dailyRate: number;
+
+        if (i === 0) {
+          // First day of booking: use base price
+          dailyRate = isVan
+            ? (dayPricing.base_van_price || 36.00)
+            : (dayPricing.base_car_price || 26.00);
+        } else {
+          // All other days: use additional day rate
+          dailyRate = isVan
+            ? (dayPricing.additional_day_rate_van || 18.00)
+            : (dayPricing.additional_day_rate || ADDITIONAL_DAY_RATE);
+        }
+
+        parkingCost += dailyRate;
+      }
 
       const addOnsCost = booking.selectedAddOns.reduce((acc, slug) => {
         const addon = addOns.find(a => a.slug === slug);
@@ -87,6 +129,7 @@ export const useBookingSubmission = ({
         phone: booking.mobile,
         vehicle_registration: booking.vehicleReg,
         vehicle_make: booking.vehicleMake,
+        vehicle_type: booking.vehicleType,
         cruise_line: booking.cruiseLine,
         ship_name: booking.shipName,
         terminal: booking.terminal || null,

@@ -4,7 +4,8 @@ import { DatePicker } from '../../../../components/client/DatePicker';
 import { TimePicker } from '../../../../components/client/TimePicker';
 import { SearchableSelect } from '../../../../components/client/SearchableSelect';
 import { PassengerSelect } from '../../../../components/client/PassengerSelect';
-import { BookingState } from '../../../../types';
+import { VehicleTypeSelect } from '../../../../components/client/VehicleTypeSelect';
+import { BookingState, VehicleType } from '../../../../types';
 
 interface CruiseLine {
   name: string;
@@ -117,6 +118,16 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
           onChange={(count) => updateBooking('passengers', count)}
           min={1}
           max={15}
+          required
+        />
+      </div>
+
+      {/* Vehicle Type Selection - Full Width */}
+      <div className="mt-2">
+        <VehicleTypeSelect
+          label="Vehicle Type"
+          value={booking.vehicleType}
+          onChange={(vehicleType: VehicleType) => updateBooking('vehicleType', vehicleType)}
           required
         />
       </div>
