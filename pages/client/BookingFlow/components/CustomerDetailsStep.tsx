@@ -9,6 +9,7 @@ interface CustomerDetailsStepProps {
   appliedPromoCode: string;
   promoMessage: string;
   isValidatingPromo: boolean;
+  isPromoCodeEnabled: boolean;
   onApplyPromo: () => void;
   onRemovePromo: () => void;
 }
@@ -19,6 +20,7 @@ export const CustomerDetailsStep: React.FC<CustomerDetailsStepProps> = ({
   appliedPromoCode,
   promoMessage,
   isValidatingPromo,
+  isPromoCodeEnabled,
   onApplyPromo,
   onRemovePromo,
 }) => {
@@ -61,48 +63,50 @@ export const CustomerDetailsStep: React.FC<CustomerDetailsStepProps> = ({
           onChange={e => updateBooking('mobile', e.target.value)}
           helperText="For shuttle updates on the day."
         />
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Promo Code (Optional)
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                value={booking.promoCode}
-                onChange={e => {
-                  updateBooking('promoCode', e.target.value.toUpperCase());
-                  if (appliedPromoCode) {
-                    onRemovePromo();
-                  }
-                }}
-                placeholder="e.g. SAVE10"
-                disabled={!!appliedPromoCode}
-              />
+        {isPromoCodeEnabled && (
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Promo Code (Optional)
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  value={booking.promoCode}
+                  onChange={e => {
+                    updateBooking('promoCode', e.target.value.toUpperCase());
+                    if (appliedPromoCode) {
+                      onRemovePromo();
+                    }
+                  }}
+                  placeholder="e.g. SAVE10"
+                  disabled={!!appliedPromoCode}
+                />
+              </div>
+              {!appliedPromoCode ? (
+                <Button
+                  onClick={onApplyPromo}
+                  disabled={!booking.promoCode || isValidatingPromo}
+                  className="whitespace-nowrap cursor-pointer"
+                >
+                  {isValidatingPromo ? 'Checking...' : 'Apply'}
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={onRemovePromo}
+                  className="whitespace-nowrap cursor-pointer"
+                >
+                  Remove
+                </Button>
+              )}
             </div>
-            {!appliedPromoCode ? (
-              <Button
-                onClick={onApplyPromo}
-                disabled={!booking.promoCode || isValidatingPromo}
-                className="whitespace-nowrap"
-              >
-                {isValidatingPromo ? 'Checking...' : 'Apply'}
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                onClick={onRemovePromo}
-                className="whitespace-nowrap"
-              >
-                Remove
-              </Button>
+            {promoMessage && (
+              <p className={`text-sm mt-2 ${promoMessage.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>
+                {promoMessage}
+              </p>
             )}
           </div>
-          {promoMessage && (
-            <p className={`text-sm mt-2 ${promoMessage.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>
-              {promoMessage}
-            </p>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
