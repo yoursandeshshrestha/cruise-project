@@ -88,7 +88,7 @@ export const Services: React.FC = () => {
             <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold text-brand-dark mb-4">Optional Extras</h2>
                 <p className="text-gray-600 max-w-2xl mx-auto">
-                    Why not treat your car while you're away? Customize your booking with these convenient add-ons during the checkout process.
+                    Why not treat your car while you're away? Customise your booking with these convenient add-ons during the checkout process.
                 </p>
             </div>
 
@@ -127,7 +127,7 @@ export const Services: React.FC = () => {
              </div>
              <h2 className="text-3xl font-bold text-brand-dark mb-6">Key Management Policy</h2>
              <p className="text-gray-600 leading-relaxed mb-8 text-lg">
-                To maximize capacity and security within our facility, we operate a <strong>block parking system</strong>. This means you will need to leave your car keys with us. 
+                To maximise capacity and security within our facility, we operate a <strong>block parking system</strong>. All customers are required to leave their car keys with us at check-in — keys are <strong>not returned until you collect your vehicle</strong>.
              </p>
              <div className="bg-blue-50 p-6 rounded-xl text-left max-w-2xl mx-auto border border-blue-100">
                 <ul className="space-y-3">
@@ -137,11 +137,11 @@ export const Services: React.FC = () => {
                     </li>
                     <li className="flex items-start gap-3 text-brand-dark">
                         <span className="text-primary font-bold">•</span>
-                        They are stored in a secure, fire-proof safe within our manned office.
+                        All keys are stored securely off site for the duration of your stay.
                     </li>
                     <li className="flex items-start gap-3 text-brand-dark">
                         <span className="text-primary font-bold">•</span>
-                        Your vehicle is only moved by fully insured drivers to organize the car park or to perform any valeting/charging services.
+                        Your vehicle is only moved by fully insured drivers to organise the car park or to perform any valeting/charging services.
                     </li>
                 </ul>
              </div>
