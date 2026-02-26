@@ -45,7 +45,7 @@ export const Prices: React.FC = () => {
           {/* Pricing Table Card */}
           <div className="bg-white rounded-2xl shadow-medium border border-gray-100 overflow-hidden col-span-1 md:col-span-2">
             <div className="p-8">
-              <h2 className="text-2xl font-bold text-brand-dark mb-2">Pricing</h2>
+              <h2 className="text-2xl font-bold text-brand-dark mb-2">Park & Ride Pricing</h2>
               <p className="text-gray-600 mb-6">
                 All prices include secure parking and free shuttle transfers for all passengers.
               </p>
