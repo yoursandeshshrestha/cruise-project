@@ -15,6 +15,7 @@ interface SystemSettingsState {
   loading: boolean;
   error: string | null;
   initialized: boolean;
+  version: number; // Increment this when settings are fetched
 
   // Actions
   fetchSettings: () => Promise<void>;
@@ -25,6 +26,7 @@ interface SystemSettingsState {
   getCompanyInfo: () => { name: string; email: string; phone: string; address: string };
   isBookingEnabled: () => boolean;
   isMaintenanceMode: () => boolean;
+  isPromoCodeEnabled: () => boolean;
   getCancellationPolicy: () => { show: boolean; text: string };
 }
 
@@ -34,9 +36,9 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
   loading: false,
   error: null,
   initialized: false,
+  version: 0,
 
   fetchSettings: async () => {
-    console.log('[SystemSettingsStore] Fetching settings...');
     set({ loading: true, error: null });
 
     try {
@@ -51,16 +53,20 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
       const cache = new Map();
       data?.forEach((group) => {
         Object.entries(group.settings).forEach(([key, value]) => {
-          cache.set(`${group.group_name}.${key}`, value);
+          const cacheKey = `${group.group_name}.${key}`;
+          cache.set(cacheKey, value);
         });
       });
 
-      console.log('[SystemSettingsStore] Fetched settings:', data?.length || 0, 'groups');
+      const currentVersion = get().version;
+      const newVersion = currentVersion + 1;
+
       set({
         settingsGroups: data || [],
         settingsCache: cache,
         loading: false,
         initialized: true,
+        version: newVersion,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch settings';
@@ -72,20 +78,17 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
   getSetting: <T = any>(group: string, key: string, defaultValue?: T): T | undefined => {
     const cache = get().settingsCache;
     const cacheKey = `${group}.${key}`;
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey) as T;
-    }
-    return defaultValue;
+    const hasKey = cache.has(cacheKey);
+    const value = hasKey ? cache.get(cacheKey) : defaultValue;
+    return value as T;
   },
 
   updateGroup: async (groupName: string, settings: Record<string, any>) => {
-    console.log('[SystemSettingsStore] Updating group:', groupName, settings);
     set({ error: null });
 
     try {
       // Check auth session before making the request
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('[SystemSettingsStore] Current session:', session ? 'exists' : 'null');
 
       if (!session) {
         throw new Error('Not authenticated. Please login again.');
@@ -103,8 +106,6 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
         .single();
 
       if (error) throw error;
-
-      console.log('[SystemSettingsStore] Group updated:', updated);
 
       // Update local state
       set(state => {
@@ -147,6 +148,10 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
 
   isMaintenanceMode: () => {
     return get().getSetting<boolean>('features', 'maintenance_mode', false);
+  },
+
+  isPromoCodeEnabled: () => {
+    return get().getSetting<boolean>('features', 'promo_codes_enabled', true);
   },
 
   getCancellationPolicy: () => {
