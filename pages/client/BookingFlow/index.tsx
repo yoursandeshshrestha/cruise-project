@@ -17,6 +17,8 @@ import { useTerminalsStore } from '../../../stores/terminalsStore';
 import { usePromoCodesStore } from '../../../stores/promoCodesStore';
 import { useBookingCartStore } from '../../../stores/bookingCartStore';
 import { Check, ChevronRight, AlertCircle, Calendar, CreditCard, Lock, Ship, MapPin, Tag } from 'lucide-react';
+import { getStripe, createCheckoutSession, sendBookingEmail } from '../../../lib/stripe';
+import type { Stripe, StripeElements, PaymentIntent } from '@stripe/stripe-js';
 
 const INITIAL_STATE: BookingState = {
   dropOffDate: '',
@@ -50,6 +52,11 @@ export const BookingFlow: React.FC = () => {
   const [promoMessage, setPromoMessage] = useState<string>('');
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Stripe state
+  const [stripe, setStripe] = useState<Stripe | null>(null);
+  const [stripeElements, setStripeElements] = useState<StripeElements | null>(null);
+  const [paymentError, setPaymentError] = useState<string>('');
 
   // Fetch cruise lines from store
   const { cruiseLines, loading, fetchActiveCruiseLines } = useCruiseLinesStore();
@@ -114,6 +121,21 @@ export const BookingFlow: React.FC = () => {
       console.log('[BookingFlow] Pre-populated add-ons from cart:', cartAddOns);
     }
   }, []);
+
+  // Initialize Stripe on mount
+  useEffect(() => {
+    getStripe().then(stripeInstance => {
+      setStripe(stripeInstance);
+    });
+  }, []);
+
+  // Generate booking reference when reaching step 4
+  useEffect(() => {
+    if (step === 4 && !bookingReference) {
+      const reference = generateBookingReference();
+      setBookingReference(reference);
+    }
+  }, [step]);
 
   // Calculate Price
   const calculateTotal = () => {
@@ -249,10 +271,11 @@ export const BookingFlow: React.FC = () => {
 
   const handleBookingSubmit = async () => {
     setIsProcessing(true);
+    setPaymentError('');
 
     try {
-      // Generate booking reference
-      const reference = generateBookingReference();
+      // Use the pre-generated booking reference
+      const reference = bookingReference;
 
       // Prepare booking data
       const dropOffDateTime = new Date(`${booking.dropOffDate}T${booking.dropOffTime}`).toISOString();
@@ -309,39 +332,63 @@ export const BookingFlow: React.FC = () => {
         promo_code: appliedPromoCode || null,
         stripe_payment_intent_id: null,
         stripe_charge_id: null,
-        payment_status: 'completed',
-        status: 'confirmed' as const,
+        stripe_checkout_session_id: null,
+        payment_status: 'pending',
+        status: 'pending' as const,
         cancellation_reason: null,
         refund_amount: null,
         refund_processed_at: null,
         internal_notes: null,
-        confirmed_at: new Date().toISOString(),
+        confirmed_at: null,
         checked_in_at: null,
         completed_at: null,
         cancelled_at: null,
       };
 
-      // Create booking in database
+      // Step 1: Create booking in database with 'pending' status
       const createdBooking = await createBooking(bookingData);
 
-      if (createdBooking) {
-        // Increment promo code usage if one was applied
-        if (appliedPromoCode) {
-          await incrementPromoCodeUsage(appliedPromoCode);
-        }
-
-        // Clear the booking cart after successful booking
-        clearCart();
-
-        setBookingReference(reference);
-        setStep(5);
-      } else {
-        alert('Failed to create booking. Please try again.');
+      if (!createdBooking) {
+        setPaymentError('Failed to create booking. Please try again.');
+        setIsProcessing(false);
+        return;
       }
+
+      // Step 2: Increment promo code usage (non-blocking - fire and forget)
+      if (appliedPromoCode) {
+        incrementPromoCodeUsage(appliedPromoCode).catch(err => {
+          console.error('Failed to increment promo code usage:', err);
+          // Don't block checkout on promo code error
+        });
+      }
+
+      // Step 3: Create Stripe Checkout Session
+      const checkoutSession = await createCheckoutSession({
+        amount: booking.totalPrice,
+        booking_reference: reference,
+        customer_email: booking.email,
+        customer_name: `${booking.firstName} ${booking.lastName}`,
+        booking_id: createdBooking.id,
+      });
+
+      // Step 4: Redirect to Stripe Checkout immediately
+      // Keep loading overlay visible during redirect
+      console.log('Redirecting to Stripe Checkout:', checkoutSession.url);
+      window.location.href = checkoutSession.url;
+      // Don't set isProcessing to false - keep the overlay until redirect completes
     } catch (error) {
       console.error('Error creating booking:', error);
-      alert('An error occurred while creating your booking. Please try again.');
-    } finally {
+
+      // Generate a new booking reference for retry
+      const newReference = generateBookingReference();
+      setBookingReference(newReference);
+
+      // Show detailed error message
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while creating your booking.';
+      setPaymentError(errorMessage);
+      alert(`${errorMessage}\n\nPlease try again.`);
+
+      // Only close loading overlay on error
       setIsProcessing(false);
     }
   };
@@ -579,74 +626,27 @@ export const BookingFlow: React.FC = () => {
   const renderStep4 = () => (
     <div className="space-y-6 animate-in slide-in-from-right duration-300">
       <h2 className="text-2xl font-bold text-brand-dark">Secure Payment</h2>
-      
-      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <h3 className="font-bold text-lg mb-4">Payment Method</h3>
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <button 
-            type="button"
-            onClick={() => setPaymentMethod('card')}
-            className={`py-3 px-2 border rounded flex items-center justify-center gap-2 transition-colors ${
-              paymentMethod === 'card' 
-                ? 'border-primary bg-blue-50 text-primary ring-1 ring-primary' 
-                : 'border-gray-300 bg-white hover:bg-gray-50'
-            }`}
-          >
-            <CreditCard size={20} className="shrink-0" />
-            <span className="font-medium text-sm sm:text-base hidden sm:inline">Card</span>
-            <span className="font-medium text-sm sm:text-base sm:hidden">Card</span>
-          </button>
-          
-           <button 
-            type="button"
-            onClick={() => setPaymentMethod('google')}
-            className={`py-3 px-2 border rounded flex items-center justify-center gap-2 transition-colors ${
-              paymentMethod === 'google' 
-                ? 'border-primary bg-blue-50 text-primary ring-1 ring-primary' 
-                : 'border-gray-300 bg-white hover:bg-gray-50'
-            }`}
-          >
-            <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            <span className="font-medium text-sm sm:text-base hidden sm:inline">Google Pay</span>
-             <span className="font-medium text-sm sm:text-base sm:hidden">Google</span>
-          </button>
 
-          <button 
-            type="button"
-            onClick={() => setPaymentMethod('apple')}
-            className={`py-3 px-2 border rounded flex items-center justify-center gap-2 transition-colors ${
-              paymentMethod === 'apple' 
-                ? 'border-primary bg-blue-50 text-primary ring-1 ring-primary' 
-                : 'border-gray-300 bg-white hover:bg-gray-50'
-            }`}
-          >
-             <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.79-1.31.02-2.3-1.23-3.14-2.47-1.71-2.49-2.97-6.95-1.18-9.98 0.88-1.5 2.47-2.45 4.18-2.48 1.3 0 2.5 0.88 3.29 0.88 0.78 0 2.24-1.08 3.77-0.92 0.64 0.03 2.44 0.26 3.6 1.95-3.13 1.5-2.6 5.92 1.09 7.55zM15.5 5.55c.67-.82 1.13-1.96.96-3.1-1.02.04-2.27.68-3 1.54-.64.75-1.19 1.97-.94 3.14 1.13.09 2.3-0.77 2.98-1.58z"/></svg>
-            <span className="font-medium text-sm sm:text-base hidden sm:inline">Apple Pay</span>
-            <span className="font-medium text-sm sm:text-base sm:hidden">Apple</span>
-          </button>
+      {paymentError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
+          <AlertCircle size={20} className="shrink-0 mt-0.5" />
+          <p className="text-sm">{paymentError}</p>
         </div>
-        
-        {paymentMethod === 'card' && (
-          <div className="space-y-4 animate-in fade-in">
-              <Input label="Card Number" placeholder="0000 0000 0000 0000" />
-              <div className="grid grid-cols-2 gap-4">
-                  <Input label="Expiry" placeholder="MM/YY" />
-                  <Input label="CVC" placeholder="123" />
-              </div>
+      )}
+
+      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+        <div className="text-center py-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock size={32} className="text-primary" />
           </div>
-        )}
-
-        {paymentMethod === 'google' && (
-           <div className="text-center py-6 animate-in fade-in">
-               <p className="text-gray-600 mb-4">You will be redirected to Google Pay to complete your purchase securely.</p>
-           </div>
-        )}
-
-         {paymentMethod === 'apple' && (
-           <div className="text-center py-6 animate-in fade-in">
-               <p className="text-gray-600 mb-4">You will be redirected to Apple Pay to complete your purchase securely.</p>
-           </div>
-        )}
+          <h3 className="font-bold text-xl mb-2">Secure Payment with Stripe</h3>
+          <p className="text-gray-600 mb-4">
+            You'll be redirected to our secure payment partner Stripe to complete your booking.
+          </p>
+          <p className="text-sm text-gray-500">
+            Stripe supports all major credit and debit cards, Apple Pay, and Google Pay.
+          </p>
+        </div>
       </div>
 
       <div className="flex items-start gap-3 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -712,6 +712,16 @@ export const BookingFlow: React.FC = () => {
   return (
     <Layout hideFooter>
       <div className="min-h-screen bg-neutral-light pb-20">
+        {/* Full-screen Loading Overlay */}
+        {isProcessing && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-xl p-8 max-w-sm mx-4 text-center shadow-2xl">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <h3 className="text-xl font-semibold text-brand-dark mb-2">Redirecting to Payment</h3>
+              <p className="text-gray-600 text-sm">Please wait while we prepare your secure checkout...</p>
+            </div>
+          </div>
+        )}
 
         {/* Progress Header - Hide on confirmation step */}
         {step < 5 && (
@@ -765,7 +775,7 @@ export const BookingFlow: React.FC = () => {
                       onClick={nextStep}
                       disabled={isProcessing || (step === 1 && !isStep1Valid()) || (step === 3 && !isStep3Valid()) || (step === 4 && !termsAccepted)}
                     >
-                        {isProcessing ? 'Processing...' : step === 4 ? 'Complete Booking' : 'Next Step'}
+                        {isProcessing ? 'Redirecting to Payment...' : step === 4 ? 'Proceed to Payment' : 'Next Step'}
                     </Button>
                 </div>
               </div>
