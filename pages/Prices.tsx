@@ -1,35 +1,11 @@
-import React, { useEffect } from 'react';
-import { Layout } from '../../../components/client/Layout';
-import { Button } from '../../../components/client/Button';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Layout } from '../components/Layout';
+import { Button } from '../components/Button';
+import { Link } from 'react-router-dom';
 import { Check, Zap, Droplets, Sparkles, Clock, Calendar, Truck } from 'lucide-react';
-import { useAddOnsStore } from '../../../stores/addOnsStore';
-import { useBookingCartStore } from '../../../stores/bookingCartStore';
-import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE, VAN_SURCHARGE_MULTIPLIER } from '../../../constants';
+import { ADD_ONS, FIRST_DAY_RATE, ADDITIONAL_DAY_RATE, VAN_SURCHARGE_MULTIPLIER } from '../constants';
 
 export const Prices: React.FC = () => {
-  const navigate = useNavigate();
-  const { addOns, fetchActiveAddOns } = useAddOnsStore();
-  const { addAddOn } = useBookingCartStore();
-
-  useEffect(() => {
-    fetchActiveAddOns();
-  }, [fetchActiveAddOns]);
-
-  const getIconComponent = (slug: string) => {
-    const iconMap: Record<string, React.ReactNode> = {
-      'ev-charging': <Zap size={24} />,
-      'exterior-wash': <Droplets size={24} />,
-      'full-valet': <Sparkles size={24} />,
-    };
-    return iconMap[slug] || <Sparkles size={24} />;
-  };
-
-  const handleAddToBooking = (addOnSlug: string) => {
-    addAddOn(addOnSlug);
-    navigate('/book');
-  };
-
   return (
     <Layout>
       <div className="bg-brand-dark text-white py-20 text-center">
@@ -130,46 +106,24 @@ export const Prices: React.FC = () => {
           </div>
         </div>
 
-        {/* What's Included */}
-        <div className="mb-20">
-          <h2 className="text-3xl font-bold text-brand-dark mb-10 text-center">What's Included</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {[
-              { label: 'Secure, CCTV monitored facility' },
-              { label: 'Free shuttle to all terminals (10 mins)' },
-              { label: 'Luggage assistance included' },
-              { label: 'Flexible amendment policy' },
-              { label: 'Nightly security patrols' },
-              { label: 'ADT security system on site' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2 text-gray-700">
-                <Check size={18} className="text-green-500 shrink-0" />
-                <span className="text-sm">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Add Ons */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-brand-dark mb-10 text-center">Optional Extras</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {addOns.map((addon) => (
+            {ADD_ONS.map((addon) => (
               <div key={addon.id} className="bg-white p-6 rounded-xl shadow-light border border-gray-100 hover:shadow-medium transition-shadow">
                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-primary mb-4">
-                  {getIconComponent(addon.slug)}
+                  {addon.icon === 'Zap' && <Zap size={24} />}
+                  {addon.icon === 'Droplets' && <Droplets size={24} />}
+                  {addon.icon === 'Sparkles' && <Sparkles size={24} />}
                 </div>
                 <h3 className="text-xl font-bold text-brand-dark mb-2">{addon.name}</h3>
                 <p className="text-gray-600 text-sm mb-6 min-h-[40px]">{addon.description}</p>
                 <div className="flex justify-between items-center border-t border-gray-100 pt-4">
-                  <span className="text-2xl font-bold text-brand-dark">£{(addon.price / 100).toFixed(2)}</span>
-                  <Button
-                    variant="secondary"
-                    className="px-4 py-2 text-sm cursor-pointer"
-                    onClick={() => handleAddToBooking(addon.slug)}
-                  >
-                    Add to Booking
-                  </Button>
+                  <span className="text-2xl font-bold text-brand-dark">£{addon.price.toFixed(2)}</span>
+                  <Link to="/book">
+                     <Button variant="secondary" className="px-4 py-2 text-sm">Add to Booking</Button>
+                  </Link>
                 </div>
               </div>
             ))}

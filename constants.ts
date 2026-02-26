@@ -1,4 +1,4 @@
-import { AddOn, CruiseLine } from './types';
+import { AddOn, CruiseLine, VehicleType } from './types';
 
 // Design Tokens
 export const COLORS = {
@@ -28,26 +28,26 @@ export const CRUISE_LINES: CruiseLine[] = [
 ];
 
 export const ADD_ONS: AddOn[] = [
-  { 
-    id: 'ev-charge', 
-    name: 'EV Charging', 
-    description: 'Fully charged ready for your journey home.', 
+  {
+    id: 'ev-charge',
+    name: 'EV Charging',
+    description: 'Fully charged ready for your journey home.',
     price: 35.00,
-    icon: 'Zap' 
+    icon: 'Zap'
   },
-  { 
-    id: 'wash-ext', 
-    name: 'Exterior Wash', 
-    description: 'Hand wash and chamois dry.', 
+  {
+    id: 'wash-ext',
+    name: 'Exterior Wash',
+    description: 'Hand wash and chamois dry.',
     price: 15.00,
-    icon: 'Droplets' 
+    icon: 'Droplets'
   },
-  { 
-    id: 'wash-full', 
-    name: 'Full Valet', 
-    description: 'Interior vacuum and exterior wash.', 
+  {
+    id: 'wash-full',
+    name: 'Full Valet',
+    description: 'Interior vacuum and exterior wash.',
     price: 45.00,
-    icon: 'Sparkles' 
+    icon: 'Sparkles'
   },
 ];
 
@@ -59,10 +59,21 @@ export const TERMINALS = [
   'Horizon Cruise Terminal'
 ];
 
-/**
- * @deprecated These constants are no longer used. Pricing is now managed dynamically
- * through the database and accessed via the usePricingStore hook.
- * These can be safely removed in a future update.
- */
-export const DAILY_RATE = 12.50;
-export const MIN_STAY_COST = 45.00;
+export const FIRST_DAY_RATE = 26;
+export const ADDITIONAL_DAY_RATE = 13;
+export const VAN_SURCHARGE_MULTIPLIER = 1.4;
+
+export function calculateParkingPrice(days: number, vehicleType: VehicleType = 'car'): number {
+  if (days <= 0) return 0;
+
+  const basePrice = FIRST_DAY_RATE + Math.max(0, days - 1) * ADDITIONAL_DAY_RATE;
+
+  return vehicleType === 'van'
+    ? Math.round(basePrice * VAN_SURCHARGE_MULTIPLIER * 100) / 100
+    : basePrice;
+}
+
+export function getParkingDaysLabel(days: number): string {
+  if (days === 1) return '1 Day';
+  return `${days} Days`;
+}
