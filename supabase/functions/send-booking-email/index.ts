@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,6 +41,238 @@ function formatDateTime(isoString: string): string {
 
 function formatCurrency(amountInPence: number): string {
   return `£${(amountInPence / 100).toFixed(2)}`;
+}
+
+async function generateBookingPDF(data: BookingEmailData): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595, 842]); // A4 size
+
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const { width, height } = page.getSize();
+  let yPosition = height - 60;
+
+  // Header
+  page.drawText('Simple Cruise Parking', {
+    x: 50,
+    y: yPosition,
+    size: 24,
+    font: helveticaBold,
+    color: rgb(0.067, 0.067, 0.067),
+  });
+  yPosition -= 25;
+
+  page.drawText('Booking Confirmation', {
+    x: 50,
+    y: yPosition,
+    size: 14,
+    font: helveticaFont,
+    color: rgb(0.467, 0.467, 0.467),
+  });
+  yPosition -= 40;
+
+  // Booking Confirmed Section
+  page.drawText('Booking Confirmed', {
+    x: 50,
+    y: yPosition,
+    size: 18,
+    font: helveticaBold,
+    color: rgb(0.067, 0.067, 0.067),
+  });
+  yPosition -= 25;
+
+  page.drawText(`Thank you ${data.first_name}. Your parking is reserved.`, {
+    x: 50,
+    y: yPosition,
+    size: 12,
+    font: helveticaFont,
+    color: rgb(0.333, 0.333, 0.333),
+  });
+  yPosition -= 35;
+
+  // Booking Reference Box
+  page.drawRectangle({
+    x: 50,
+    y: yPosition - 50,
+    width: width - 100,
+    height: 60,
+    color: rgb(0.949, 0.957, 0.965),
+  });
+
+  page.drawText('BOOKING REFERENCE', {
+    x: 65,
+    y: yPosition - 15,
+    size: 9,
+    font: helveticaFont,
+    color: rgb(0.467, 0.467, 0.467),
+  });
+
+  page.drawText(data.booking_reference, {
+    x: 65,
+    y: yPosition - 38,
+    size: 18,
+    font: helveticaBold,
+    color: rgb(0.067, 0.067, 0.067),
+  });
+  yPosition -= 80;
+
+  // Booking Details
+  const formatSimpleDateTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).replace(',', '');
+  };
+
+  const details = [
+    { label: 'Drop Off', value: formatSimpleDateTime(data.drop_off_datetime) },
+    { label: 'Return', value: formatSimpleDateTime(data.return_datetime) },
+    { label: 'Cruise Line', value: data.cruise_line },
+    { label: 'Ship', value: data.ship_name },
+    ...(data.terminal ? [{ label: 'Terminal', value: data.terminal }] : []),
+    { label: 'Passengers', value: data.number_of_passengers.toString() },
+    { label: 'Vehicle', value: `${data.vehicle_make} (${data.vehicle_registration})` },
+    ...(data.add_ons && data.add_ons.length > 0 ? [{ label: 'Add-ons', value: data.add_ons.join(', ') }] : []),
+  ];
+
+  details.forEach((detail) => {
+    page.drawText(detail.label, {
+      x: 50,
+      y: yPosition,
+      size: 11,
+      font: helveticaFont,
+      color: rgb(0.267, 0.267, 0.267),
+    });
+
+    const valueWidth = helveticaBold.widthOfTextAtSize(detail.value, 11);
+    page.drawText(detail.value, {
+      x: width - 50 - valueWidth,
+      y: yPosition,
+      size: 11,
+      font: helveticaBold,
+      color: rgb(0.067, 0.067, 0.067),
+    });
+
+    yPosition -= 22;
+  });
+
+  // Divider line
+  yPosition -= 10;
+  page.drawLine({
+    start: { x: 50, y: yPosition },
+    end: { x: width - 50, y: yPosition },
+    thickness: 1,
+    color: rgb(0.9, 0.9, 0.9),
+  });
+  yPosition -= 25;
+
+  // Discount if applicable
+  if (data.discount && data.discount > 0) {
+    const discountLabel = `Discount${data.promo_code ? ` (${data.promo_code})` : ''}`;
+    const discountValue = `-${formatCurrency(data.discount)}`;
+
+    page.drawText(discountLabel, {
+      x: 50,
+      y: yPosition,
+      size: 11,
+      font: helveticaFont,
+      color: rgb(0.467, 0.467, 0.467),
+    });
+
+    const discountWidth = helveticaFont.widthOfTextAtSize(discountValue, 11);
+    page.drawText(discountValue, {
+      x: width - 50 - discountWidth,
+      y: yPosition,
+      size: 11,
+      font: helveticaFont,
+      color: rgb(0.467, 0.467, 0.467),
+    });
+
+    yPosition -= 25;
+  }
+
+  // Total
+  page.drawText('Total Paid', {
+    x: 50,
+    y: yPosition,
+    size: 14,
+    font: helveticaBold,
+    color: rgb(0.067, 0.067, 0.067),
+  });
+
+  const totalValue = formatCurrency(data.total);
+  const totalWidth = helveticaBold.widthOfTextAtSize(totalValue, 14);
+  page.drawText(totalValue, {
+    x: width - 50 - totalWidth,
+    y: yPosition,
+    size: 14,
+    font: helveticaBold,
+    color: rgb(0.067, 0.067, 0.067),
+  });
+  yPosition -= 40;
+
+  // Important Information
+  page.drawText('Important Information', {
+    x: 50,
+    y: yPosition,
+    size: 12,
+    font: helveticaBold,
+    color: rgb(0.067, 0.067, 0.067),
+  });
+  yPosition -= 20;
+
+  const infoPoints = [
+    '• Arrive 30 minutes before drop-off',
+    '• Bring booking reference and photo ID',
+    '• Free shuttle to the cruise terminal',
+  ];
+
+  infoPoints.forEach((point) => {
+    page.drawText(point, {
+      x: 50,
+      y: yPosition,
+      size: 10,
+      font: helveticaFont,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+    yPosition -= 18;
+  });
+
+  // Footer
+  const footerY = 60;
+  page.drawLine({
+    start: { x: 50, y: footerY + 30 },
+    end: { x: width - 50, y: footerY + 30 },
+    thickness: 1,
+    color: rgb(0.933, 0.933, 0.933),
+  });
+
+  const year = new Date().getFullYear();
+  const copyrightText = `© ${year} Simple Cruise Parking`;
+  const copyrightWidth = helveticaFont.widthOfTextAtSize(copyrightText, 9);
+
+  page.drawText(copyrightText, {
+    x: (width - copyrightWidth) / 2,
+    y: footerY + 10,
+    size: 9,
+    font: helveticaFont,
+    color: rgb(0.6, 0.6, 0.6),
+  });
+
+  page.drawText('info@simplecruiseparking.com', {
+    x: (width - helveticaFont.widthOfTextAtSize('info@simplecruiseparking.com', 9)) / 2,
+    y: footerY - 5,
+    size: 9,
+    font: helveticaFont,
+    color: rgb(0.6, 0.6, 0.6),
+  });
+
+  return await pdfDoc.save();
 }
 
 function generateBookingEmailHTML(data: BookingEmailData): string {
@@ -239,6 +472,11 @@ serve(async (req) => {
     // Generate email HTML
     const emailHTML = generateBookingEmailHTML(bookingData);
 
+    // Generate PDF
+    console.log('Generating PDF for booking:', bookingData.booking_reference);
+    const pdfBytes = await generateBookingPDF(bookingData);
+    const pdfBlob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+
     // Prepare form data for Mailgun
     const formData = new FormData();
     formData.append('from', `Simple Cruise Parking <${fromEmail}>`);
@@ -267,6 +505,9 @@ Need help? Email us at info@simplecruiseparking.com
 
 © ${new Date().getFullYear()} Simple Cruise Parking
     `);
+
+    // Attach PDF to email
+    formData.append('attachment', pdfBlob, `booking-${bookingData.booking_reference}.pdf`);
 
     // Send email via Mailgun
     const mailgunResponse = await fetch(
