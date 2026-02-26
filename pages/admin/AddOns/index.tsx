@@ -144,6 +144,7 @@ export const AddOns: React.FC = () => {
           name: formData.name.trim(),
           description: formData.description.trim(),
           price: parseFloat(formData.price),
+          icon: null,
           is_active: true,
           display_order: addOns.length + 1,
         });
