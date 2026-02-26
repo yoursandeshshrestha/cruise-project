@@ -5,20 +5,35 @@ import type { Database } from '../lib/supabase';
 type Booking = Database['public']['Tables']['bookings']['Row'];
 type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
 
+interface BookingStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  checked_in: number;
+  completed: number;
+  cancelled: number;
+}
+
 interface BookingsState {
   bookings: Booking[];
+  allBookings: Booking[];
   currentBooking: Booking | null;
+  stats: BookingStats | null;
   loading: boolean;
   error: string | null;
   initialized: boolean;
+  hasMore: boolean;
+  page: number;
 
   // Actions
-  fetchBookings: (searchQuery?: string, statusFilter?: string) => Promise<void>;
+  fetchBookings: (page?: number, limit?: number, filters?: { search?: string; status?: string; showPending?: boolean }) => Promise<void>;
+  fetchStats: () => Promise<void>;
   fetchBookingByReference: (reference: string) => Promise<Booking | null>;
   fetchBookingsByEmail: (email: string) => Promise<Booking[]>;
   createBooking: (booking: BookingInsert) => Promise<Booking | null>;
   updateBooking: (id: string, updates: Partial<BookingInsert>) => Promise<void>;
   cancelBooking: (id: string, reason: string) => Promise<void>;
+  resetPagination: () => void;
 
   // Helpers
   generateBookingReference: () => string;
@@ -33,32 +48,75 @@ const generateReference = (): string => {
 
 export const useBookingsStore = create<BookingsState>((set, get) => ({
   bookings: [],
+  allBookings: [],
   currentBooking: null,
+  stats: null,
   loading: false,
   error: null,
   initialized: false,
+  hasMore: true,
+  page: 0,
 
   generateBookingReference: () => {
     return generateReference();
   },
 
-  fetchBookings: async (searchQuery?: string, statusFilter?: string) => {
-    console.log('[BookingsStore] Fetching bookings...', { searchQuery, statusFilter });
+  resetPagination: () => {
+    set({ page: 0, hasMore: true });
+  },
+
+  fetchStats: async () => {
+    console.log('[BookingsStore] Fetching stats...');
+
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('status');
+
+      if (error) throw error;
+
+      const stats: BookingStats = {
+        total: data?.length || 0,
+        pending: data?.filter(b => b.status === 'pending').length || 0,
+        confirmed: data?.filter(b => b.status === 'confirmed').length || 0,
+        checked_in: data?.filter(b => b.status === 'checked_in').length || 0,
+        completed: data?.filter(b => b.status === 'completed').length || 0,
+        cancelled: data?.filter(b => b.status === 'cancelled').length || 0,
+      };
+
+      console.log('[BookingsStore] Fetched stats:', stats);
+      set({ stats });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stats';
+      console.error('[BookingsStore] Error fetching stats:', errorMessage);
+    }
+  },
+
+  fetchBookings: async (page = 0, limit = 50, filters?: { search?: string; status?: string; showPending?: boolean }) => {
+    console.log('[BookingsStore] Fetching bookings...', { page, limit, filters });
     set({ loading: true, error: null });
 
     try {
+      const from = page * limit;
+      const to = from + limit - 1;
+
       let query = supabase
         .from('bookings')
-        .select('*');
+        .select('*', { count: 'exact' });
 
       // Apply status filter
-      if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
       }
 
-      // Apply search filter - search across multiple fields using OR
-      if (searchQuery && searchQuery.trim()) {
-        const search = searchQuery.trim().toLowerCase();
+      // Apply pending filter
+      if (filters?.showPending === false) {
+        query = query.neq('status', 'pending');
+      }
+
+      // Apply search filter
+      if (filters?.search && filters.search.trim()) {
+        const search = filters.search.trim();
         query = query.or(
           `booking_reference.ilike.%${search}%,` +
           `first_name.ilike.%${search}%,` +
@@ -68,15 +126,28 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
         );
       }
 
-      // Order by created_at descending
-      query = query.order('created_at', { ascending: false });
+      // Order and paginate
+      query = query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
-      console.log('[BookingsStore] Fetched bookings:', data?.length || 0);
-      set({ bookings: data || [], loading: false, initialized: true });
+      console.log('[BookingsStore] Fetched bookings:', data?.length || 0, 'total:', count);
+
+      const newBookings = data || [];
+      const hasMore = count ? from + newBookings.length < count : false;
+
+      set(state => ({
+        bookings: page === 0 ? newBookings : [...state.bookings, ...newBookings],
+        allBookings: page === 0 ? newBookings : [...state.allBookings, ...newBookings],
+        loading: false,
+        initialized: true,
+        hasMore,
+        page,
+      }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch bookings';
       console.error('[BookingsStore] Error fetching bookings:', errorMessage);
