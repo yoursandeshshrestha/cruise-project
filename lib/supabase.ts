@@ -200,10 +200,16 @@ export interface Database {
           price_per_day: number;
           minimum_charge: number;
           vat_rate: number;
-          start_date: string | null;
-          end_date: string | null;
+          start_date: string;
+          end_date: string;
           is_active: boolean;
           display_order: number;
+          base_car_price: number;
+          base_van_price: number;
+          additional_day_rate: number;
+          additional_day_rate_van: number;
+          priority: number;
+          reason: string | null;
           created_at: string;
           updated_at: string;
         };
