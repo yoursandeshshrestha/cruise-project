@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from '../components/Layout';
+import { Layout } from '../components/client/Layout';
 import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { Select } from '../components/Select';
+import { Input } from '../components/client/Input';
+import { Select } from '../components/client/Select';
 import { AlertCircle, Calendar, Car, Ship, CreditCard, Download, Edit, XCircle, CheckCircle, MapPin, History, FileText, X, Save, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
