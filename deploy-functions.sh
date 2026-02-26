@@ -66,25 +66,13 @@ for func in "${FUNCTIONS[@]}"; do
 
     echo "Deploying $func..."
 
-    # Deploy with appropriate flags
-    if [ "$func" = "create-checkout-session" ] || [ "$func" = "stripe-webhook" ]; then
-        # Public functions - no JWT verification needed (Stripe uses signatures)
-        if supabase functions deploy "$func" --no-verify-jwt 2>&1; then
-            echo "✅ $func deployed successfully (public access)"
-            SUCCESSFUL+=("$func")
-        else
-            echo "❌ Failed to deploy $func"
-            FAILED+=("$func")
-        fi
+    # Deploy all functions without JWT verification (public access)
+    if supabase functions deploy "$func" --no-verify-jwt 2>&1; then
+        echo "✅ $func deployed successfully (public access)"
+        SUCCESSFUL+=("$func")
     else
-        # Protected function - requires JWT
-        if supabase functions deploy "$func" 2>&1; then
-            echo "✅ $func deployed successfully (protected)"
-            SUCCESSFUL+=("$func")
-        else
-            echo "❌ Failed to deploy $func"
-            FAILED+=("$func")
-        fi
+        echo "❌ Failed to deploy $func"
+        FAILED+=("$func")
     fi
     echo ""
 done
