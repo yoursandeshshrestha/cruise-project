@@ -341,6 +341,46 @@ serve(async (req) => {
         break;
       }
 
+      case 'checkout.session.expired': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('Checkout session expired:', session.id);
+
+        const bookingId = session.client_reference_id || session.metadata?.booking_id;
+        const isAmendment = session.metadata?.is_amendment === 'true';
+
+        if (!bookingId) {
+          console.error('No booking ID found in expired session');
+          break;
+        }
+
+        // For amendments, we don't cancel the booking, just log it
+        if (isAmendment) {
+          console.log('Amendment checkout expired for booking:', bookingId);
+          // Don't cancel the original booking for expired amendment payments
+          break;
+        }
+
+        // For new bookings, cancel to release capacity
+        const { error } = await supabase
+          .from('bookings')
+          .update({
+            payment_status: 'cancelled',
+            status: 'cancelled',
+            cancellation_reason: 'Checkout session expired (24 hours)',
+            cancelled_at: new Date().toISOString(),
+          })
+          .eq('id', bookingId)
+          .eq('payment_status', 'pending'); // Only cancel if still pending
+
+        if (error) {
+          console.error('Error cancelling expired booking:', error);
+          throw error;
+        }
+
+        console.log('Expired booking cancelled, capacity released:', bookingId);
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }

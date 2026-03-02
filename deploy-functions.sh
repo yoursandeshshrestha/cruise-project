@@ -73,6 +73,7 @@ FUNCTIONS=(
     "create-checkout-session"
     "send-booking-email"
     "stripe-webhook"
+    "cleanup-expired-bookings"
 )
 
 # Track success/failure
@@ -160,8 +161,14 @@ echo "📚 Function Endpoints:"
 echo "   - create-checkout-session: Creates Stripe Checkout Session for payments"
 echo "   - stripe-webhook: Handles Stripe payment events and confirms bookings"
 echo "   - send-booking-email: Sends booking confirmation emails via Mailgun"
+echo "   - cleanup-expired-bookings: Cancels old pending bookings to release capacity"
 echo ""
 echo "🔒 Security:"
 echo "   - All functions deployed with --no-verify-jwt (no JWT verification)"
 echo "   - Authentication handled via Supabase service role key in function calls"
+echo ""
+echo "⏰ Automated Cleanup:"
+echo "   - GitHub Action runs cleanup-expired-bookings every hour automatically"
+echo "   - Cancels pending bookings older than 2 hours to release capacity"
+echo "   - Manual trigger available in GitHub Actions tab"
 echo ""

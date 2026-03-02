@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Database } from '../lib/supabase';
-
-type Booking = Database['public']['Tables']['bookings']['Row'];
-type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
+import type { Booking, BookingInsert } from '../lib/supabase';
 
 interface BookingStats {
   total: number;
@@ -106,7 +103,7 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       // Apply status filter
       if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+        query = query.eq('status', filters.status as 'pending' | 'confirmed' | 'checked_in' | 'completed' | 'cancelled');
       }
 
       // Apply pending filter
@@ -153,8 +150,8 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
       const hasMore = count ? from + newBookings.length < count : false;
 
       set(state => ({
-        bookings: page === 0 ? newBookings : [...state.bookings, ...newBookings],
-        allBookings: page === 0 ? newBookings : [...state.allBookings, ...newBookings],
+        bookings: page === 0 ? (newBookings as unknown as Booking[]) : [...state.bookings, ...(newBookings as unknown as Booking[])],
+        allBookings: page === 0 ? (newBookings as unknown as Booking[]) : [...state.allBookings, ...(newBookings as unknown as Booking[])],
         loading: false,
         initialized: true,
         hasMore,
@@ -181,8 +178,8 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
       if (error) throw error;
 
       console.log('[BookingsStore] Fetched booking:', data);
-      set({ currentBooking: data, loading: false });
-      return data;
+      set({ currentBooking: data as unknown as Booking, loading: false });
+      return data as unknown as Booking;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch booking';
       console.error('[BookingsStore] Error fetching booking:', errorMessage);
@@ -205,8 +202,8 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
       if (error) throw error;
 
       console.log('[BookingsStore] Fetched bookings for email:', data?.length || 0);
-      set({ bookings: data || [], loading: false });
-      return data || [];
+      set({ bookings: (data || []) as unknown as Booking[], loading: false });
+      return (data || []) as unknown as Booking[];
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch bookings';
       console.error('[BookingsStore] Error fetching bookings:', errorMessage);
@@ -222,7 +219,7 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .insert(bookingData)
+        .insert(bookingData as any)
         .select()
         .single();
 
@@ -232,12 +229,12 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       // Add to local state
       set(state => ({
-        bookings: [data, ...state.bookings],
-        currentBooking: data,
+        bookings: [data as unknown as Booking, ...state.bookings],
+        currentBooking: data as unknown as Booking,
         loading: false
       }));
 
-      return data;
+      return data as unknown as Booking;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create booking';
       console.error('[BookingsStore] Error creating booking:', errorMessage);
@@ -253,7 +250,7 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
     try {
       const { data: updated, error } = await supabase
         .from('bookings')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -265,7 +262,7 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
       // Update local state with the full updated record from database
       set(state => ({
         bookings: state.bookings.map(b =>
-          b.id === id ? updated : b
+          b.id === id ? updated as unknown as Booking : b
         )
       }));
     } catch (error) {

@@ -59,7 +59,7 @@ export const Arrivals: React.FC = () => {
     return new Date(a.drop_off_datetime).getTime() - new Date(b.drop_off_datetime).getTime();
   });
 
-  const handleCheckIn = async (booking: Booking) => {
+  const handleCheckIn = async (booking: any) => {
     if (booking.status === 'checked_in') {
       toast.info('Customer already checked in');
       return;

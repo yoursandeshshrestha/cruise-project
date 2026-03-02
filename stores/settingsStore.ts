@@ -21,25 +21,28 @@ interface AddOn {
 interface PricingRule {
   id: string;
   name: string;
-  price_per_day: number; // in pence
-  minimum_charge: number; // in pence
+  base_car_price: number | null; // in pence
+  base_van_price: number | null; // in pence
+  additional_day_rate: number | null; // in pence
+  additional_day_rate_van: number | null; // in pence
   vat_rate: number; // as decimal (e.g., 0.20 for 20%)
   start_date: string | null;
   end_date: string | null;
-  is_active: boolean;
+  priority: number;
+  reason: string | null;
+  is_active: boolean | null;
   display_order: number;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface CapacityOverride {
   id: string;
   date: string;
-  max_capacity: number;
-  current_bookings: number;
+  capacity: number;
   notes: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // Parsed settings for easy access
@@ -121,8 +124,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       .sort((a, b) => b.display_order - a.display_order)[0];
 
     // Convert pence to pounds and get VAT rate
-    const dailyRate = activePricing ? activePricing.price_per_day / 100 : 12.50;
-    const minimumStayCost = activePricing ? activePricing.minimum_charge / 100 : 45.00;
+    const dailyRate = activePricing ? (activePricing.base_car_price || 0) / 100 : 12.50;
+    const minimumStayCost = activePricing ? (activePricing.base_car_price || 0) / 100 : 45.00;
     const vatRate = activePricing ? activePricing.vat_rate : 0.20; // Default to 20% if no pricing rule
 
     return {
@@ -408,7 +411,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
     try {
       const { data, error } = await supabase
-        .from('capacity_overrides')
+        .from('daily_capacities')
         .select('*')
         .order('date', { ascending: true });
 
@@ -430,7 +433,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
     try {
       const { data: newOverride, error } = await supabase
-        .from('capacity_overrides')
+        .from('daily_capacities')
         .insert(data)
         .select()
         .single();
@@ -457,7 +460,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
     try {
       const { error } = await supabase
-        .from('capacity_overrides')
+        .from('daily_capacities')
         .update(data)
         .eq('id', id);
 
@@ -485,7 +488,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
     try {
       const { error } = await supabase
-        .from('capacity_overrides')
+        .from('daily_capacities')
         .delete()
         .eq('id', id);
 

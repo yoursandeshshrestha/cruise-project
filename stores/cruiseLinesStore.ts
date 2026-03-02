@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, type CruiseLine } from '../lib/supabase';
 import type { Database } from '../lib/supabase';
 
-type CruiseLine = Database['public']['Tables']['cruise_lines']['Row'];
 type CruiseLineInsert = Database['public']['Tables']['cruise_lines']['Insert'];
 type CruiseLineUpdate = Database['public']['Tables']['cruise_lines']['Update'];
 
@@ -41,7 +40,7 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
       }
 
       console.log('[CruiseLinesStore] Loaded', data?.length || 0, 'cruise lines');
-      set({ cruiseLines: data || [], loading: false, initialized: true });
+      set({ cruiseLines: (data || []) as unknown as CruiseLine[], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cruise lines';
       console.error('[CruiseLinesStore] Error:', errorMessage);
@@ -66,7 +65,7 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
       }
 
       console.log('[CruiseLinesStore] Loaded', data?.length || 0, 'active cruise lines');
-      set({ cruiseLines: data || [], loading: false, initialized: true });
+      set({ cruiseLines: (data || []) as unknown as CruiseLine[], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cruise lines';
       console.error('[CruiseLinesStore] Error:', errorMessage);
@@ -109,7 +108,7 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
 
       console.log('[CruiseLinesStore] Created cruise line:', data);
       set(state => ({
-        cruiseLines: [...state.cruiseLines, data]
+        cruiseLines: [...state.cruiseLines, data as unknown as CruiseLine]
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create cruise line';
@@ -143,7 +142,7 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
       console.log('[CruiseLinesStore] Updated cruise line:', updated);
       set(state => ({
         cruiseLines: state.cruiseLines.map(cl =>
-          cl.id === id ? updated : cl
+          cl.id === id ? updated as unknown as CruiseLine : cl
         )
       }));
     } catch (error) {

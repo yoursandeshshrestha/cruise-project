@@ -214,8 +214,8 @@ export const ManageBooking: React.FC = () => {
 
     // Calculate add-ons cost (in pounds)
     let addOnsCost = 0;
-    if (booking?.add_ons && booking.add_ons.length > 0) {
-      booking.add_ons.forEach((slug) => {
+    if (booking?.add_ons && Array.isArray(booking.add_ons) && booking.add_ons.length > 0) {
+      (booking.add_ons as string[]).forEach((slug) => {
         const addon = addOns.find(a => a.slug === slug);
         if (addon) {
           addOnsCost += addon.price;
@@ -362,7 +362,7 @@ export const ManageBooking: React.FC = () => {
       }
 
       // Set the booking
-      setBooking(foundBooking);
+      setBooking(foundBooking as any);
 
       // Fetch all previous bookings for this email
       const allBookings = await fetchBookingsByEmail(email.toLowerCase().trim());
@@ -371,7 +371,7 @@ export const ManageBooking: React.FC = () => {
         b.id !== foundBooking.id &&
         (b.status === 'completed' || b.status === 'cancelled')
       );
-      setPreviousBookings(previous);
+      setPreviousBookings(previous as any);
 
       setStatus('dashboard');
     } catch (error) {
@@ -467,7 +467,7 @@ export const ManageBooking: React.FC = () => {
           // Refresh booking data
           const updatedBooking = await fetchBookingByReference(booking.booking_reference);
           if (updatedBooking) {
-            setBooking(updatedBooking);
+            setBooking(updatedBooking as any);
           }
 
           setIsAmendOpen(false);
@@ -612,8 +612,8 @@ export const ManageBooking: React.FC = () => {
             doc.text("Parking & Services", 20, y);
             y += 6;
 
-            if (booking.add_ons && booking.add_ons.length > 0) {
-              booking.add_ons.forEach(slug => {
+            if (booking.add_ons && Array.isArray(booking.add_ons) && booking.add_ons.length > 0) {
+              (booking.add_ons as string[]).forEach(slug => {
                   const addon = addOns.find(a => a.slug === slug);
                   if (addon) {
                     doc.text(addon.name, 20, y);
@@ -655,7 +655,7 @@ export const ManageBooking: React.FC = () => {
         // Refresh booking data
         const updatedBooking = await fetchBookingByReference(booking.booking_reference);
         if (updatedBooking) {
-          setBooking(updatedBooking);
+          setBooking(updatedBooking as any);
         }
 
         setIsCancelOpen(false);
@@ -830,10 +830,10 @@ export const ManageBooking: React.FC = () => {
                                     <h3 className="font-semibold text-brand-dark">Payment Summary</h3>
                                 </div>
                                 <div className="space-y-2 text-sm">
-                                    {booking.add_ons && booking.add_ons.length > 0 && (
+                                    {booking.add_ons && Array.isArray(booking.add_ons) && booking.add_ons.length > 0 && (
                                       <div className="pb-2 border-b border-gray-100">
                                         <p className="text-xs text-gray-500 mb-2">Add-ons:</p>
-                                        {booking.add_ons.map((slug, index) => {
+                                        {(booking.add_ons as string[]).map((slug, index) => {
                                           const addon = addOns.find(a => a.slug === slug);
                                           return addon ? (
                                             <div key={index} className="flex justify-between mb-1">

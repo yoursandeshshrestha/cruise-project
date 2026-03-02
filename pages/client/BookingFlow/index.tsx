@@ -460,7 +460,7 @@ export const BookingFlow: React.FC = () => {
                   <TripDetailsStep
                     booking={booking}
                     updateBooking={updateBooking}
-                    cruiseLines={cruiseLines}
+                    cruiseLines={cruiseLines as any}
                     terminals={terminals}
                   />
                 )}

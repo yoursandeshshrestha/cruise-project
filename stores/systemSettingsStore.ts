@@ -62,7 +62,7 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
       const newVersion = currentVersion + 1;
 
       set({
-        settingsGroups: data || [],
+        settingsGroups: (data || []) as SystemSettingsGroup[],
         settingsCache: cache,
         loading: false,
         initialized: true,
@@ -121,8 +121,8 @@ export const useSystemSettingsStore = create<SystemSettingsState>((set, get) => 
 
         return {
           settingsGroups: existingGroup
-            ? state.settingsGroups.map(g => g.group_name === groupName ? updated : g)
-            : [...state.settingsGroups, updated],
+            ? state.settingsGroups.map(g => g.group_name === groupName ? updated as SystemSettingsGroup : g)
+            : [...state.settingsGroups, updated as SystemSettingsGroup],
           settingsCache: newCache,
         };
       });

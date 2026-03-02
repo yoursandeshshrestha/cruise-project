@@ -1,0 +1,39 @@
+name: Cleanup Expired Bookings
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+
+  # Allow manual trigger from Actions tab
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call cleanup function
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            https://jsqnixorhshlrlaoneir.supabase.co/functions/v1/cleanup-expired-bookings)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "Status Code: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::Cleanup function failed with status code $http_code"
+            exit 1
+          fi
+
+          # Extract cancelled count from response
+          cancelled=$(echo "$body" | grep -o '"cancelled_count":[0-9]*' | grep -o '[0-9]*')
+          echo "✅ Successfully cancelled $cancelled expired bookings"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::Failed to cleanup expired bookings. Check the logs above."

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { KPICard } from '../../../components/admin/KPICard';
-import { supabase } from '../../../lib/supabase';
+import { supabase, type Payment } from '../../../lib/supabase';
 import { Search, Download, X, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -18,27 +18,6 @@ import { Badge } from '../../../components/admin/ui/badge';
 import { Input } from '../../../components/admin/ui/input';
 import { Spinner } from '../../../components/admin/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/admin/ui/select';
-
-interface Payment {
-  id: string;
-  booking_id: string;
-  payment_type: 'new_booking' | 'amendment';
-  stripe_payment_intent_id: string | null;
-  stripe_checkout_session_id: string | null;
-  amount: number;
-  subtotal: number;
-  vat: number;
-  status: string;
-  created_at: string;
-  completed_at: string | null;
-  metadata: Record<string, unknown>;
-  bookings?: {
-    booking_reference: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-}
 
 interface PaymentStats {
   totalRevenue: number;
@@ -80,10 +59,10 @@ export const Payments: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPayments(data || []);
+      setPayments((data || []) as Payment[]);
 
       // Calculate stats
-      const completedPayments = (data || []).filter((p: Payment) => p.status === 'completed');
+      const completedPayments = ((data || []) as Payment[]).filter((p: Payment) => p.status === 'completed');
       const totalRevenue = completedPayments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
       const totalTransactions = completedPayments.length;
       const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;

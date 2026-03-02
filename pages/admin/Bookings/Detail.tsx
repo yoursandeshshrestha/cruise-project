@@ -147,14 +147,14 @@ export const BookingDetail: React.FC = () => {
             <CustomerInfoCard booking={booking} />
             <TripDetailsCard booking={booking} formatDateTime={formatDateTime} />
             <VehicleInfoCard booking={booking} />
-            {booking.add_ons && Array.isArray(booking.add_ons) && (
-              <AddOnsCard addOns={booking.add_ons} />
+            {booking.add_ons && Array.isArray(booking.add_ons) && booking.add_ons.length > 0 && (
+              <AddOnsCard addOns={booking.add_ons as string[]} />
             )}
           </div>
 
           {/* Right Column - Payment & Actions */}
           <div className="space-y-6">
-            <PaymentCard booking={booking} />
+            <PaymentCard booking={booking as any} />
             <StatusCard
               status={booking.status}
               onStatusChange={(newStatus) => handleStatusChange(newStatus, booking.id)}
@@ -195,7 +195,7 @@ export const BookingDetail: React.FC = () => {
           bookingReference={booking.booking_reference}
           editForm={editForm}
           setEditForm={setEditForm}
-          cruiseLines={cruiseLines}
+          cruiseLines={cruiseLines as any}
           terminals={terminals}
           onSubmit={() => handleEditSubmit(booking.id)}
         />

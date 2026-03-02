@@ -97,7 +97,7 @@ export const CruiseLines: React.FC = () => {
 
         {/* Table */}
         <CruiseLinesTable
-          cruiseLines={cruiseLines}
+          cruiseLines={cruiseLines as any}
           onEdit={handleOpenDialog}
           onDelete={handleOpenDeleteDialog}
           onToggleActive={handleToggleActive}
