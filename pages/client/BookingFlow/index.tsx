@@ -12,6 +12,8 @@ import { usePromoCodesStore } from '../../../stores/promoCodesStore';
 import { useBookingCartStore } from '../../../stores/bookingCartStore';
 import { usePricingStore } from '../../../stores/pricingStore';
 import { getStripe } from '../../../lib/stripe';
+import { supabase } from '../../../lib/supabase';
+import { startOfDay, eachDayOfInterval, format } from 'date-fns';
 
 // Hooks
 import { useBookingCalculations } from './hooks/useBookingCalculations';
@@ -51,6 +53,132 @@ const INITIAL_STATE: BookingState = {
   totalPrice: 0,
 };
 
+// Helper function to check capacity for date range
+const checkCapacityForDateRange = async (
+  dropOffDate: string,
+  returnDate: string,
+  defaultCapacity: number
+): Promise<{ available: boolean; message: string; overCapacityDates: string[] }> => {
+  try {
+    // Convert dates to Date objects
+    const startDate = startOfDay(new Date(dropOffDate));
+    const endDate = startOfDay(new Date(returnDate));
+
+    // Get all dates in the range
+    const datesInRange = eachDayOfInterval({ start: startDate, end: endDate });
+
+    // Fetch custom capacities for the date range
+    const dateStrings = datesInRange.map(d => format(d, 'yyyy-MM-dd'));
+    const { data: customCapacities } = await supabase
+      .from('daily_capacities')
+      .select('date, capacity')
+      .in('date', dateStrings);
+
+    // Build map of custom capacities
+    const capacityMap = new Map<string, number>();
+    customCapacities?.forEach((cap) => {
+      capacityMap.set(cap.date, cap.capacity);
+    });
+
+    // Fetch bookings that overlap with any date in this range
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('drop_off_datetime, return_datetime')
+      .lte('drop_off_datetime', endDate.toISOString())
+      .gte('return_datetime', startDate.toISOString())
+      .in('status', ['pending', 'confirmed', 'checked_in']);
+
+    if (error) throw error;
+
+    const overCapacityDates: Date[] = [];
+
+    // Check each date in the range
+    for (const date of datesInRange) {
+      const dateStr = format(date, 'yyyy-MM-dd');
+
+      // Get capacity for this date (custom or default)
+      const dayCapacity = capacityMap.get(dateStr) || defaultCapacity;
+
+      // Count how many bookings are active on this date
+      const countOnDate = bookings?.filter((booking) => {
+        const dropOff = format(startOfDay(new Date(booking.drop_off_datetime)), 'yyyy-MM-dd');
+        const returnDateTime = format(startOfDay(new Date(booking.return_datetime)), 'yyyy-MM-dd');
+
+        // Check if the date falls within the booking period
+        return dateStr >= dropOff && dateStr <= returnDateTime;
+      }).length || 0;
+
+      // Check if this date is over capacity
+      if (countOnDate >= dayCapacity) {
+        overCapacityDates.push(date);
+      }
+    }
+
+    if (overCapacityDates.length > 0) {
+      // Group consecutive dates into ranges
+      const dateRanges: string[] = [];
+      let rangeStart = overCapacityDates[0];
+      let rangeEnd = overCapacityDates[0];
+
+      for (let i = 1; i <= overCapacityDates.length; i++) {
+        const currentDate = overCapacityDates[i];
+        const prevDate = overCapacityDates[i - 1];
+
+        // Check if current date is consecutive (1 day after previous)
+        const isConsecutive = currentDate &&
+          Math.abs(currentDate.getTime() - prevDate.getTime()) === 86400000; // 1 day in ms
+
+        if (isConsecutive) {
+          rangeEnd = currentDate;
+        } else {
+          // End of consecutive sequence, format the range
+          if (rangeStart.getTime() === rangeEnd.getTime()) {
+            // Single date
+            dateRanges.push(format(rangeStart, 'MMM dd, yyyy'));
+          } else {
+            // Date range
+            const sameMonth = rangeStart.getMonth() === rangeEnd.getMonth() &&
+                            rangeStart.getFullYear() === rangeEnd.getFullYear();
+            if (sameMonth) {
+              dateRanges.push(`${format(rangeStart, 'MMM dd')}-${format(rangeEnd, 'dd, yyyy')}`);
+            } else {
+              dateRanges.push(`${format(rangeStart, 'MMM dd')} - ${format(rangeEnd, 'MMM dd, yyyy')}`);
+            }
+          }
+
+          // Start new range
+          if (currentDate) {
+            rangeStart = currentDate;
+            rangeEnd = currentDate;
+          }
+        }
+      }
+
+      const datesList = dateRanges.join(', ');
+      const formattedDates = overCapacityDates.map(d => format(d, 'MMM dd, yyyy'));
+
+      return {
+        available: false,
+        message: `Sorry, we have reached maximum capacity for the following date(s): ${datesList}. Please select different dates.`,
+        overCapacityDates: formattedDates,
+      };
+    }
+
+    return {
+      available: true,
+      message: '',
+      overCapacityDates: [],
+    };
+  } catch (error) {
+    console.error('Error checking capacity:', error);
+    return {
+      available: false,
+      message: 'Unable to check availability at this time. Please try again or contact us for assistance.',
+      overCapacityDates: [],
+    };
+  }
+};
+
 export const BookingFlow: React.FC = () => {
   const location = useLocation();
   const [step, setStep] = useState<BookingStep>(1);
@@ -65,7 +193,7 @@ export const BookingFlow: React.FC = () => {
   const { cruiseLines, fetchActiveCruiseLines } = useCruiseLinesStore();
   const { createBooking, generateBookingReference } = useBookingsStore();
   const { addOns, parsedSettings, fetchSettings, fetchAddOns } = useSettingsStore();
-  const { getCancellationPolicy, fetchSettings: fetchSystemSettings, isBookingEnabled, isMaintenanceMode, isPromoCodeEnabled } = useSystemSettingsStore();
+  const { getCancellationPolicy, fetchSettings: fetchSystemSettings, isBookingEnabled, isMaintenanceMode, isPromoCodeEnabled, getSetting } = useSystemSettingsStore();
   const { terminals, fetchActiveTerminals } = useTerminalsStore();
   const { validatePromoCode: validatePromoCodeStore, incrementPromoCodeUsage } = usePromoCodesStore();
   const { getAddOns, clearCart } = useBookingCartStore();
@@ -223,6 +351,24 @@ export const BookingFlow: React.FC = () => {
       }
       setShowUnavailableModal(true);
       return;
+    }
+
+    // Check capacity when moving from step 1 to step 2
+    if (step === 1 && booking.dropOffDate && booking.returnDate) {
+      const defaultCapacity = getSetting<number>('capacity', 'default_daily_capacity', 100) ?? 100;
+
+      const capacityCheck = await checkCapacityForDateRange(
+        booking.dropOffDate,
+        booking.returnDate,
+        defaultCapacity
+      );
+
+      if (!capacityCheck.available) {
+        setIsCheckingAvailability(false);
+        setUnavailableMessage(capacityCheck.message);
+        setShowUnavailableModal(true);
+        return;
+      }
     }
 
     // If we're at step 4, proceed with payment submission
@@ -387,30 +533,71 @@ export const BookingFlow: React.FC = () => {
     </Layout>
 
     {/* Booking Unavailable Modal */}
-    <Modal
-      isOpen={showUnavailableModal}
-      onClose={() => setShowUnavailableModal(false)}
-      title={
-        unavailableMessage.includes('Promo code')
-          ? 'Promo Codes Unavailable'
-          : unavailableMessage.includes('maintenance')
-          ? 'System Maintenance'
-          : 'Booking Currently Unavailable'
-      }
-      showCloseButton={unavailableMessage.includes('Promo code')}
-    >
-      <p className="mb-6">{unavailableMessage}</p>
-      {!unavailableMessage.includes('Promo code') && (
-        <div className="flex flex-col gap-3">
-          <a href="/" className="block">
-            <Button className="w-full cursor-pointer">Return to Home</Button>
-          </a>
-          <a href="/contact" className="block">
-            <Button variant="secondary" className="w-full cursor-pointer">Contact Us</Button>
-          </a>
+    {showUnavailableModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+          {/* Icon */}
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+            {unavailableMessage.includes('Promo code')
+              ? 'Promo Code Unavailable'
+              : unavailableMessage.includes('maintenance')
+              ? 'System Maintenance'
+              : 'Booking Unavailable'}
+          </h3>
+
+          {/* Message */}
+          <p className="text-sm text-gray-600 text-center mb-6">
+            {unavailableMessage}
+          </p>
+
+          {/* Actions */}
+          {unavailableMessage.includes('Promo code') ? (
+            <Button
+              onClick={() => setShowUnavailableModal(false)}
+              className="w-full cursor-pointer"
+            >
+              Continue Without Promo Code
+            </Button>
+          ) : (
+            <div className="flex gap-3">
+              <a href="/" className="flex-1">
+                <Button variant="secondary" className="w-full cursor-pointer">
+                  Return Home
+                </Button>
+              </a>
+              {unavailableMessage.includes('capacity') && (
+                <Button
+                  onClick={() => setShowUnavailableModal(false)}
+                  variant="primary"
+                  className="flex-1 cursor-pointer"
+                >
+                  Choose Dates
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-      )}
-    </Modal>
+      </div>
+    )}
     </>
   );
 };

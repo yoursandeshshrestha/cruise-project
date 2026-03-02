@@ -3,41 +3,335 @@ import { Layout } from '../../../components/client/Layout';
 import { Button } from '../../../components/client/Button';
 import { Input } from '../../../components/client/Input';
 import { Select } from '../../../components/client/Select';
-import { AlertCircle, Calendar, Car, Ship, CreditCard, Download, Edit, XCircle, CheckCircle, MapPin, History, X, Save, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { AlertCircle, Calendar, Car, Ship, CreditCard, Download, Edit, XCircle, CheckCircle, MapPin, History, X, Save, AlertTriangle, Loader2, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useBookingsStore } from '../../../stores/bookingsStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
+import { useSystemSettingsStore } from '../../../stores/systemSettingsStore';
+import { usePricingStore } from '../../../stores/pricingStore';
+import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../lib/supabase';
+import { differenceInDays, differenceInCalendarDays, format, startOfDay, eachDayOfInterval } from 'date-fns';
+import { PricingNotice } from '../BookingFlow/components/PricingNotice';
+import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE } from '../../../constants';
 
 type Booking = Database['public']['Tables']['bookings']['Row'];
 
 export const ManageBooking: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [reference, setReference] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'dashboard' | 'error'>('idle');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [previousBookings, setPreviousBookings] = useState<Booking[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showAmendmentSuccess, setShowAmendmentSuccess] = useState(false);
 
   // Fetch stores
   const { fetchBookingByReference, fetchBookingsByEmail, updateBooking, cancelBooking: cancelBookingInStore } = useBookingsStore();
   const { addOns, fetchAddOns } = useSettingsStore();
+  const { getSetting } = useSystemSettingsStore();
+  const { getPricingForDate, fetchPricingRules } = usePricingStore();
 
-  // Fetch add-ons on mount
+  // Check for amendment success from URL params
+  React.useEffect(() => {
+    const amended = searchParams.get('amended');
+    const bookingId = searchParams.get('booking_id');
+
+    if (amended === 'true' && bookingId) {
+      // Show success toast
+      setShowAmendmentSuccess(true);
+      // Auto-hide toast after 5 seconds
+      setTimeout(() => setShowAmendmentSuccess(false), 5000);
+      // Clean up URL params
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Fetch add-ons and pricing on mount
   React.useEffect(() => {
     fetchAddOns();
-  }, [fetchAddOns]);
+    fetchPricingRules();
+  }, [fetchAddOns, fetchPricingRules]);
+
+  // Helper function to convert ISO string to datetime-local format
+  const isoToDatetimeLocal = (isoString: string): string => {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Helper function to convert datetime-local value to ISO string
+  const datetimeLocalToISO = (datetimeLocalValue: string): string => {
+    // datetime-local format: "2026-03-27T14:00"
+    // We need to treat this as local time and convert to ISO
+    const date = new Date(datetimeLocalValue);
+    return date.toISOString();
+  };
+
+  // Check capacity for amended dates
+  const checkCapacityForAmendedDates = async (newDropOff: string, newReturn: string, currentBookingId: string) => {
+    try {
+      const defaultCapacity = getSetting<number>('capacity', 'default_daily_capacity', 100) ?? 100;
+      const startDate = startOfDay(new Date(newDropOff));
+      const parkingDays = differenceInCalendarDays(new Date(newReturn), new Date(newDropOff)) + 1;
+
+      // Generate dates for each parking day (including both drop-off and return dates)
+      const datesInRange: Date[] = [];
+      for (let i = 0; i < parkingDays; i++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        datesInRange.push(date);
+      }
+      const dateStrings = datesInRange.map(d => format(d, 'yyyy-MM-dd'));
+
+      // Fetch custom capacities
+      const { data: customCapacities } = await supabase
+        .from('daily_capacities')
+        .select('date, capacity')
+        .in('date', dateStrings);
+
+      const capacityMap = new Map<string, number>();
+      customCapacities?.forEach((cap) => {
+        capacityMap.set(cap.date, cap.capacity);
+      });
+
+      // Fetch bookings (excluding current booking)
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + parkingDays);
+
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('drop_off_datetime, return_datetime')
+        .lte('drop_off_datetime', endDate.toISOString())
+        .gte('return_datetime', startDate.toISOString())
+        .in('status', ['pending', 'confirmed', 'checked_in'])
+        .neq('id', currentBookingId);
+
+      if (error) throw error;
+
+      const overCapacityDates: Date[] = [];
+
+      for (const date of datesInRange) {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayCapacity = capacityMap.get(dateStr) || defaultCapacity;
+
+        const countOnDate = bookings?.filter((booking) => {
+          const dropOff = format(startOfDay(new Date(booking.drop_off_datetime)), 'yyyy-MM-dd');
+          const returnDateTime = format(startOfDay(new Date(booking.return_datetime)), 'yyyy-MM-dd');
+          // Car occupies space from drop-off through return date (inclusive)
+          return dateStr >= dropOff && dateStr <= returnDateTime;
+        }).length || 0;
+
+        if (countOnDate >= dayCapacity) {
+          overCapacityDates.push(date);
+        }
+      }
+
+      if (overCapacityDates.length > 0) {
+        // Group consecutive dates into ranges
+        const dateRanges: string[] = [];
+        let rangeStart = overCapacityDates[0];
+        let rangeEnd = overCapacityDates[0];
+
+        for (let i = 1; i <= overCapacityDates.length; i++) {
+          const currentDate = overCapacityDates[i];
+          const prevDate = overCapacityDates[i - 1];
+
+          const isConsecutive = currentDate &&
+            Math.abs(currentDate.getTime() - prevDate.getTime()) === 86400000;
+
+          if (isConsecutive) {
+            rangeEnd = currentDate;
+          } else {
+            if (rangeStart.getTime() === rangeEnd.getTime()) {
+              dateRanges.push(format(rangeStart, 'MMM dd, yyyy'));
+            } else {
+              const sameMonth = rangeStart.getMonth() === rangeEnd.getMonth() &&
+                              rangeStart.getFullYear() === rangeEnd.getFullYear();
+              if (sameMonth) {
+                dateRanges.push(`${format(rangeStart, 'MMM dd')}-${format(rangeEnd, 'dd, yyyy')}`);
+              } else {
+                dateRanges.push(`${format(rangeStart, 'MMM dd')} - ${format(rangeEnd, 'MMM dd, yyyy')}`);
+              }
+            }
+
+            if (currentDate) {
+              rangeStart = currentDate;
+              rangeEnd = currentDate;
+            }
+          }
+        }
+
+        return {
+          available: false,
+          message: `Sorry, we have reached maximum capacity for the following date(s): ${dateRanges.join(', ')}. Please select different dates.`,
+          overCapacityDates: dateRanges,
+        };
+      }
+
+      return { available: true, message: '', overCapacityDates: [] };
+    } catch (error) {
+      console.error('Error checking capacity:', error);
+      return {
+        available: false,
+        message: 'Unable to check availability at this time. Please try again.',
+        overCapacityDates: [],
+      };
+    }
+  };
+
+  // Calculate additional pricing for amended dates - follows EXACT main booking flow logic
+  const calculateAdditionalPricing = (oldDropOff: string, oldReturn: string, newDropOff: string, newReturn: string) => {
+    const VAT_RATE = 0.20;
+
+    // Check if dates actually changed (not just time)
+    const oldDropOffDate = format(new Date(oldDropOff), 'yyyy-MM-dd');
+    const oldReturnDate = format(new Date(oldReturn), 'yyyy-MM-dd');
+    const newDropOffDate = format(new Date(newDropOff), 'yyyy-MM-dd');
+    const newReturnDate = format(new Date(newReturn), 'yyyy-MM-dd');
+    const datesChanged = oldDropOffDate !== newDropOffDate || oldReturnDate !== newReturnDate;
+
+    if (!datesChanged) {
+      // Only time changed, no charge
+      return { additionalDays: 0, additionalCharge: 0, dailyBreakdown: [], amendmentFee: 0, pricingReason: null, pricingPriority: null };
+    }
+
+    // Calculate days
+    const oldDays = differenceInCalendarDays(new Date(oldReturn), new Date(oldDropOff)) + 1;
+    const newDays = differenceInCalendarDays(new Date(newReturn), new Date(newDropOff)) + 1;
+
+    // Get amendment extension fee from settings
+    const amendmentFee = getSetting<number>('capacity', 'amendment_extension_fee', 5) ?? 5;
+
+    // Determine if this is a car or van booking
+    const isVan = booking?.parking_type === 'van';
+
+    // Calculate add-ons cost (in pounds)
+    let addOnsCost = 0;
+    if (booking?.add_ons && booking.add_ons.length > 0) {
+      booking.add_ons.forEach((slug) => {
+        const addon = addOns.find(a => a.slug === slug);
+        if (addon) {
+          addOnsCost += addon.price;
+        }
+      });
+    }
+
+    // Calculate NEW booking parking cost (following EXACT main booking flow)
+    let newParkingCost = 0;
+    const newStartDate = new Date(newDropOff);
+    const dailyBreakdown: Array<{ day: number; date: string; rate: number }> = [];
+    let highestPriority: number | null = null;
+    let pricingReason: string | null = null;
+
+    for (let i = 0; i < newDays; i++) {
+      const currentDate = new Date(newStartDate);
+      currentDate.setDate(currentDate.getDate() + i);
+      const pricing = getPricingForDate(currentDate);
+
+      // Day 1 uses base price, subsequent days use additional_day_rate (same as main booking flow)
+      let dailyRate: number;
+      if (i === 0) {
+        dailyRate = isVan ? (pricing?.base_van_price ?? 36) : (pricing?.base_car_price ?? 26);
+      } else {
+        dailyRate = isVan ? (pricing?.additional_day_rate_van ?? 18) : (pricing?.additional_day_rate ?? 13);
+      }
+
+      newParkingCost += dailyRate;
+
+      // Track priority 1 pricing
+      if (pricing?.priority === 1) {
+        if (highestPriority === null || pricing.priority < highestPriority) {
+          highestPriority = pricing.priority;
+          pricingReason = pricing.reason;
+        }
+      }
+
+      dailyBreakdown.push({
+        day: i + 1,
+        date: format(currentDate, 'MMM dd, yyyy'),
+        rate: dailyRate,
+      });
+    }
+
+    // FOLLOW EXACT MAIN BOOKING FLOW LOGIC:
+    // baseCost = parkingCost + addOnsCost
+    // vatAmount = baseCost * vatRate
+    // subtotalWithVAT = baseCost + vatAmount
+
+    // NEW booking baseCost (excl VAT)
+    const newBaseCost = newParkingCost + addOnsCost;
+
+    // OLD booking baseCost (excl VAT) from database
+    const oldBaseCost = (booking?.subtotal ?? 0) / 100; // Convert from pence to pounds
+
+    // Calculate difference in baseCost (excl VAT)
+    const baseCostDifference = newBaseCost - oldBaseCost;
+
+    // If difference is negative, only charge amendment fee
+    // If positive, charge difference + amendment fee
+    const chargeableDifference = Math.max(0, baseCostDifference);
+
+    // Amendment baseCost (excl VAT) = price difference + amendment fee
+    const amendmentBaseCost = chargeableDifference + amendmentFee;
+
+    // Calculate VAT (following main booking flow)
+    const amendmentVat = amendmentBaseCost * VAT_RATE;
+
+    // Total amendment charge (following main booking flow) - keep in POUNDS
+    const amendmentTotal = amendmentBaseCost + amendmentVat;
+
+    return {
+      additionalDays: newDays - oldDays,
+      additionalCharge: amendmentTotal, // in POUNDS (not pence) - same as main booking flow
+      dailyBreakdown,
+      amendmentFee: amendmentFee, // in pounds
+      pricingReason: highestPriority === 1 ? pricingReason : null,
+      pricingPriority: highestPriority,
+      oldBookingCost: oldBaseCost, // in pounds (excl VAT)
+      oldParkingCost: oldBaseCost - addOnsCost, // in pounds (excl VAT, parking only)
+      addOnsCost, // in pounds
+      newBookingCost: newBaseCost, // in pounds (excl VAT)
+      newParkingCost, // in pounds (parking only)
+      priceDifference: chargeableDifference, // in pounds (excl VAT)
+    };
+  };
 
   // Amend Modal State
   const [isAmendOpen, setIsAmendOpen] = useState(false);
   const [isSavingAmend, setIsSavingAmend] = useState(false);
+  const [isCheckingAmendment, setIsCheckingAmendment] = useState(false);
   const [amendForm, setAmendForm] = useState({
       dropOffDateTime: '',
       returnDateTime: '',
       vehicleReg: '',
       vehicleMake: ''
   });
+
+  // Amendment Confirmation Modal State
+  const [showAmendConfirmation, setShowAmendConfirmation] = useState(false);
+  const [isBreakdownExpanded, setIsBreakdownExpanded] = useState(false);
+  const [amendmentDetails, setAmendmentDetails] = useState<{
+    additionalDays: number;
+    additionalCharge: number;
+    unavailableDates: string[];
+    dailyBreakdown: Array<{ day: number; date: string; rate: number }>;
+    amendmentFee: number;
+    pricingReason: string | null;
+    pricingPriority: number | null;
+    oldBookingCost: number;
+    oldParkingCost: number;
+    addOnsCost: number;
+    newBookingCost: number;
+    newParkingCost: number;
+    priceDifference: number;
+  } | null>(null);
 
   // Cancel Modal State
   const [isCancelOpen, setIsCancelOpen] = useState(false);
@@ -113,29 +407,119 @@ export const ManageBooking: React.FC = () => {
       e.preventDefault();
       if (!booking) return;
 
-      setIsSavingAmend(true);
+      setIsCheckingAmendment(true);
       try {
-        // Update booking in database
-        await updateBooking(booking.id, {
-          drop_off_datetime: amendForm.dropOffDateTime,
-          return_datetime: amendForm.returnDateTime,
-          vehicle_registration: amendForm.vehicleReg,
-          vehicle_make: amendForm.vehicleMake
-        });
+        // 0. Fetch latest pricing rules and settings
+        await fetchPricingRules();
+        await useSystemSettingsStore.getState().fetchSettings();
 
-        // Refresh booking data
-        const updatedBooking = await fetchBookingByReference(booking.booking_reference);
-        if (updatedBooking) {
-          setBooking(updatedBooking);
+        // 1. Check capacity for new dates
+        const capacityCheck = await checkCapacityForAmendedDates(
+          amendForm.dropOffDateTime,
+          amendForm.returnDateTime,
+          booking.id
+        );
+
+        if (!capacityCheck.available) {
+          alert(capacityCheck.message);
+          setIsCheckingAmendment(false);
+          return;
         }
 
-        setIsAmendOpen(false);
+        // 2. Calculate additional pricing
+        const pricingDetails = calculateAdditionalPricing(
+          booking.drop_off_datetime,
+          booking.return_datetime,
+          amendForm.dropOffDateTime,
+          amendForm.returnDateTime
+        );
+
+        // 3. If there's an additional charge, show confirmation modal
+        if (pricingDetails.additionalCharge > 0) {
+          setAmendmentDetails({
+            additionalDays: pricingDetails.additionalDays,
+            additionalCharge: pricingDetails.additionalCharge,
+            unavailableDates: [],
+            dailyBreakdown: pricingDetails.dailyBreakdown,
+            amendmentFee: pricingDetails.amendmentFee,
+            pricingReason: pricingDetails.pricingReason,
+            pricingPriority: pricingDetails.pricingPriority,
+            oldBookingCost: pricingDetails.oldBookingCost,
+            oldParkingCost: pricingDetails.oldParkingCost,
+            addOnsCost: pricingDetails.addOnsCost,
+            newBookingCost: pricingDetails.newBookingCost,
+            newParkingCost: pricingDetails.newParkingCost,
+            priceDifference: pricingDetails.priceDifference,
+          });
+          setIsBreakdownExpanded(false); // Reset breakdown to collapsed
+          setShowAmendConfirmation(true);
+          setIsCheckingAmendment(false);
+        } else {
+          // No additional charge, just update the booking
+          setIsSavingAmend(true);
+          await updateBooking(booking.id, {
+            drop_off_datetime: amendForm.dropOffDateTime,
+            return_datetime: amendForm.returnDateTime,
+            vehicle_registration: amendForm.vehicleReg,
+            vehicle_make: amendForm.vehicleMake
+          });
+
+          // Refresh booking data
+          const updatedBooking = await fetchBookingByReference(booking.booking_reference);
+          if (updatedBooking) {
+            setBooking(updatedBooking);
+          }
+
+          setIsAmendOpen(false);
+          setIsSavingAmend(false);
+          setIsCheckingAmendment(false);
+        }
       } catch (error) {
         console.error('Error updating booking:', error);
         alert('Failed to update booking. Please try again.');
-      } finally {
+        setIsCheckingAmendment(false);
         setIsSavingAmend(false);
       }
+  };
+
+  const handleAmendPayment = async () => {
+    if (!booking || !amendmentDetails) return;
+
+    try {
+      setIsSavingAmend(true);
+
+      // Create Stripe checkout session for amendment
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          booking_id: booking.id,
+          amount: amendmentDetails.additionalCharge, // In pounds (will be converted to pence by function)
+          booking_reference: booking.booking_reference,
+          customer_email: booking.email,
+          isAmendment: true,
+          amendmentData: {
+            drop_off_datetime: amendForm.dropOffDateTime,
+            return_datetime: amendForm.returnDateTime,
+            vehicle_registration: amendForm.vehicleReg,
+            vehicle_make: amendForm.vehicleMake,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Redirect to Stripe Checkout (same as booking flow)
+      if (data && data.url) {
+        console.log('Redirecting to Stripe Checkout:', data.url);
+        window.location.href = data.url;
+        // Don't set isSavingAmend to false - keep the loading state until redirect completes
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert('Failed to process payment. Please try again.');
+      setIsSavingAmend(false);
+    }
   };
 
   const handleDownloadReceipt = () => {
@@ -557,25 +941,18 @@ export const ManageBooking: React.FC = () => {
                             
                             <form onSubmit={handleAmendSubmit}>
                                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                                    <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 mb-4">
-                                        <AlertCircle size={20} className="text-primary shrink-0 mt-0.5" />
-                                        <p className="text-sm text-blue-800">
-                                            Changing your dates may affect the total price. If the new price is higher, we will contact you to collect the difference.
-                                        </p>
-                                    </div>
-
                                     <div className="grid grid-cols-2 gap-4">
                                         <Input
                                             label="Drop Off Date & Time"
                                             type="datetime-local"
-                                            value={amendForm.dropOffDateTime.slice(0, 16)}
-                                            onChange={(e) => setAmendForm({...amendForm, dropOffDateTime: e.target.value + ':00.000Z'})}
+                                            value={isoToDatetimeLocal(amendForm.dropOffDateTime)}
+                                            onChange={(e) => setAmendForm({...amendForm, dropOffDateTime: datetimeLocalToISO(e.target.value)})}
                                         />
                                         <Input
                                             label="Return Date & Time"
                                             type="datetime-local"
-                                            value={amendForm.returnDateTime.slice(0, 16)}
-                                            onChange={(e) => setAmendForm({...amendForm, returnDateTime: e.target.value + ':00.000Z'})}
+                                            value={isoToDatetimeLocal(amendForm.returnDateTime)}
+                                            onChange={(e) => setAmendForm({...amendForm, returnDateTime: datetimeLocalToISO(e.target.value)})}
                                         />
                                     </div>
 
@@ -597,21 +974,177 @@ export const ManageBooking: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => setIsAmendOpen(false)}
-                                        disabled={isSavingAmend}
+                                        disabled={isSavingAmend || isCheckingAmendment}
                                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isSavingAmend}
+                                        disabled={isSavingAmend || isCheckingAmendment}
                                         className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors cursor-pointer"
                                     >
-                                        {isSavingAmend ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                        {isSavingAmend ? 'Saving...' : 'Save Changes'}
+                                        {(isSavingAmend || isCheckingAmendment) ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                        {isCheckingAmendment ? 'Checking...' : isSavingAmend ? 'Saving...' : 'Continue'}
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Amendment Confirmation Modal */}
+                {showAmendConfirmation && amendmentDetails && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-brand-dark/50 backdrop-blur-sm" onClick={() => setShowAmendConfirmation(false)}></div>
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col relative z-10 animate-in zoom-in-95 duration-200">
+                            <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
+                                <h2 className="text-xl font-bold text-brand-dark">Confirm Amendment</h2>
+                                <button onClick={() => setShowAmendConfirmation(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto">
+                                {/* New Booking Dates - Stat Card Style */}
+                                <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 p-4 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-primary/10 p-2 rounded-lg">
+                                            <Calendar className="text-primary" size={24} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-gray-600 uppercase tracking-wide font-medium mb-1">
+                                                New Booking Period
+                                            </p>
+                                            <p className="text-base font-bold text-brand-dark">
+                                                {amendForm.dropOffDateTime && format(new Date(amendForm.dropOffDateTime), 'MMM d')} - {amendForm.returnDateTime && format(new Date(amendForm.returnDateTime), 'MMM d, yyyy')}
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                {amendmentDetails.dailyBreakdown.length} {amendmentDetails.dailyBreakdown.length === 1 ? 'day' : 'days'} of parking
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 mb-6">
+                                    {/* Original Booking Summary */}
+                                    <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1">
+                                        <div className="text-gray-700 font-semibold mb-2">Original Booking</div>
+                                        <div className="flex justify-between text-gray-600">
+                                            <span>Parking</span>
+                                            <span>£{amendmentDetails.oldParkingCost.toFixed(2)}</span>
+                                        </div>
+                                        {amendmentDetails.addOnsCost > 0 && (
+                                            <div className="flex justify-between text-gray-600">
+                                                <span>Add-ons</span>
+                                                <span>£{amendmentDetails.addOnsCost.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-gray-600">
+                                            <span>VAT (20%)</span>
+                                            <span>£{((amendmentDetails.oldBookingCost / 1.2) * 0.2).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-gray-900 font-semibold pt-1 border-t border-gray-300">
+                                            <span>Total Paid</span>
+                                            <span>£{amendmentDetails.oldBookingCost.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* New Booking Calculation */}
+                                    <div className="bg-blue-50 p-3 rounded-lg text-xs space-y-1">
+                                        <div className="text-gray-700 font-semibold mb-2">New Booking</div>
+                                        <div className="flex justify-between text-gray-600">
+                                            <span>Parking</span>
+                                            <span>£{amendmentDetails.newParkingCost.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-red-600">
+                                            <span>Less: Old Parking</span>
+                                            <span>-£{amendmentDetails.oldParkingCost.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-primary font-semibold pt-1 border-t border-blue-200">
+                                            <span>Parking Difference</span>
+                                            <span>£{amendmentDetails.priceDifference.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div
+                                            className="flex justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 rounded -mx-2"
+                                            onClick={() => setIsBreakdownExpanded(!isBreakdownExpanded)}
+                                        >
+                                            <span className="text-gray-700 font-medium flex items-center gap-1">
+                                                New Booking Breakdown ({amendmentDetails.dailyBreakdown.length} {amendmentDetails.dailyBreakdown.length === 1 ? 'day' : 'days'})
+                                                {isBreakdownExpanded ? (
+                                                    <ChevronUp size={14} className="text-gray-400" />
+                                                ) : (
+                                                    <ChevronDown size={14} className="text-gray-400" />
+                                                )}
+                                            </span>
+                                        </div>
+                                        {isBreakdownExpanded && amendmentDetails.dailyBreakdown.length > 0 && (
+                                            <div className="mt-2 space-y-1 pl-4 pb-2 max-h-48 overflow-y-auto">
+                                                {amendmentDetails.dailyBreakdown.map((daily, index) => (
+                                                    <div key={index} className="flex justify-between text-xs text-gray-500">
+                                                        <span>Day {daily.day} ({daily.date})</span>
+                                                        <span>£{daily.rate.toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-gray-200 pt-3 space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-700">Price Difference</span>
+                                            <span className="font-medium">£{amendmentDetails.priceDifference.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-700">Amendment Fee</span>
+                                            <span className="font-medium">£{amendmentDetails.amendmentFee.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600">Subtotal</span>
+                                            <span className="font-medium">£{(amendmentDetails.priceDifference + amendmentDetails.amendmentFee).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">VAT (20%)</span>
+                                        <span className="font-medium">£{(amendmentDetails.additionalCharge / 1.2 * 0.2).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Fixed Footer with Total and Buttons */}
+                            <div className="border-t border-gray-200 p-6 bg-white rounded-b-xl shrink-0">
+                                <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+                                    <span className="font-bold text-brand-dark text-lg">Total to Pay</span>
+                                    <span className="font-bold text-brand-dark text-2xl">£{amendmentDetails.additionalCharge.toFixed(2)}</span>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={handleAmendPayment}
+                                        disabled={isSavingAmend}
+                                        className="w-full py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                                    >
+                                        {isSavingAmend ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" /> Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CreditCard size={16} /> Proceed to Payment
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAmendConfirmation(false)}
+                                        disabled={isSavingAmend}
+                                        className="w-full py-2 px-4 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -652,6 +1185,29 @@ export const ManageBooking: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Amendment Success Toast */}
+                {showAmendmentSuccess && (
+                    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top duration-300">
+                        <div className="bg-green-600 text-white rounded-lg shadow-2xl px-6 py-4 flex items-center gap-3 max-w-md">
+                            <div className="shrink-0">
+                                <CheckCircle size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-sm">Booking Updated!</h3>
+                                <p className="text-xs text-green-50 mt-1">
+                                    Your booking has been successfully amended. Please enter your details below to view the updated booking.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowAmendmentSuccess(false)}
+                                className="shrink-0 text-green-100 hover:text-white transition-colors cursor-pointer"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
                     </div>
                 )}
