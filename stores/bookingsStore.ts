@@ -26,7 +26,7 @@ interface BookingsState {
   page: number;
 
   // Actions
-  fetchBookings: (page?: number, limit?: number, filters?: { search?: string; status?: string; showPending?: boolean }) => Promise<void>;
+  fetchBookings: (page?: number, limit?: number, filters?: { search?: string; status?: string; showPending?: boolean; date?: string }) => Promise<void>;
   fetchStats: () => Promise<void>;
   fetchBookingByReference: (reference: string) => Promise<Booking | null>;
   fetchBookingsByEmail: (email: string) => Promise<Booking[]>;
@@ -92,7 +92,7 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
     }
   },
 
-  fetchBookings: async (page = 0, limit = 50, filters?: { search?: string; status?: string; showPending?: boolean }) => {
+  fetchBookings: async (page = 0, limit = 50, filters?: { search?: string; status?: string; showPending?: boolean; date?: string }) => {
     console.log('[BookingsStore] Fetching bookings...', { page, limit, filters });
     set({ loading: true, error: null });
 
@@ -112,6 +112,18 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
       // Apply pending filter
       if (filters?.showPending === false) {
         query = query.neq('status', 'pending');
+      }
+
+      // Apply date filter (filter by drop-off or return date)
+      if (filters?.date) {
+        const dateStr = filters.date;
+        const startOfDay = `${dateStr}T00:00:00`;
+        const endOfDay = `${dateStr}T23:59:59`;
+        // Match bookings where drop-off or return date is on the specified date
+        query = query.or(
+          `and(drop_off_datetime.gte.${startOfDay},drop_off_datetime.lte.${endOfDay}),` +
+          `and(return_datetime.gte.${startOfDay},return_datetime.lte.${endOfDay})`
+        );
       }
 
       // Apply search filter

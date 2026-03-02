@@ -42,6 +42,7 @@ export const useBookingActions = (
   fetchBookings: () => Promise<void>
 ) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditFormData>({
     first_name: '',
     last_name: '',
@@ -121,13 +122,38 @@ export const useBookingActions = (
     }
   };
 
+  const openCancelDialog = () => {
+    setIsCancelDialogOpen(true);
+  };
+
+  const handleCancelBooking = async (bookingId: string, reason: string) => {
+    try {
+      await updateBooking(bookingId, {
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancelled_at: new Date().toISOString(),
+      });
+
+      toast.success('Booking cancelled successfully');
+      setIsCancelDialogOpen(false);
+      fetchBookings();
+    } catch (error) {
+      toast.error('Failed to cancel booking');
+      console.error('Error cancelling booking:', error);
+    }
+  };
+
   return {
     isEditDialogOpen,
     setIsEditDialogOpen,
+    isCancelDialogOpen,
+    setIsCancelDialogOpen,
     editForm,
     setEditForm,
     handleStatusChange,
     openEditDialog,
+    openCancelDialog,
     handleEditSubmit,
+    handleCancelBooking,
   };
 };

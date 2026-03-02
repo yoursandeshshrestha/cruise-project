@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { KPICard } from '../../../components/admin/KPICard';
 import { useBookingsStore } from '../../../stores/bookingsStore';
-import { Search, Filter, Download, Calendar, Ship, User, Mail, Phone, Car } from 'lucide-react';
+import { Search, Filter, Download, Calendar, Ship, User, Mail, Phone, Car, X } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   Table,
@@ -21,33 +21,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 export const Bookings: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { bookings, stats, loading, error, fetchBookings, fetchStats, resetPagination, initialized, hasMore, page } = useBookingsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showPending, setShowPending] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [dateFilter, setDateFilter] = useState<string | null>(searchParams.get('date'));
+
+  // Sync date filter from URL params
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    setDateFilter(dateParam);
+  }, [searchParams]);
 
   // Fetch bookings and stats on mount and when filters change
   useEffect(() => {
     const timer = setTimeout(() => {
       resetPagination();
-      fetchBookings(0, 50, { search: searchQuery, status: statusFilter, showPending });
+      fetchBookings(0, 50, { search: searchQuery, status: statusFilter, showPending, date: dateFilter || undefined });
     }, searchQuery ? 500 : 0); // 500ms debounce only for search
 
     return () => clearTimeout(timer);
-  }, [searchQuery, statusFilter, showPending, fetchBookings, resetPagination]);
+  }, [searchQuery, statusFilter, showPending, dateFilter, fetchBookings, resetPagination]);
 
   // Fetch stats only on mount
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
+  // Clear date filter
+  const clearDateFilter = () => {
+    setDateFilter(null);
+    const params = new URLSearchParams(searchParams);
+    params.delete('date');
+    setSearchParams(params);
+  };
+
   // Load more handler for infinite scroll
   const handleLoadMore = async () => {
     if (!hasMore || loading || isLoadingMore) return;
 
     setIsLoadingMore(true);
-    await fetchBookings(page + 1, 50, { search: searchQuery, status: statusFilter, showPending });
+    await fetchBookings(page + 1, 50, { search: searchQuery, status: statusFilter, showPending, date: dateFilter || undefined });
     setIsLoadingMore(false);
   };
 
@@ -144,6 +160,23 @@ export const Bookings: React.FC = () => {
             loading={!stats}
           />
         </div>
+
+        {/* Date Filter Badge */}
+        {dateFilter && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">
+              Showing bookings for {format(new Date(dateFilter), 'MMM dd, yyyy')}
+            </span>
+            <button
+              onClick={clearDateFilter}
+              className="ml-auto p-1 hover:bg-blue-100 rounded cursor-pointer"
+              title="Clear date filter"
+            >
+              <X className="w-4 h-4 text-blue-600" />
+            </button>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex gap-4 items-center">

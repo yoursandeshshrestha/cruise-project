@@ -19,6 +19,7 @@ import { PaymentCard } from './components/PaymentCard';
 import { StatusCard } from './components/StatusCard';
 import { TimelineCard } from './components/TimelineCard';
 import { EditBookingDialog } from './components/EditBookingDialog';
+import { CancelBookingDialog } from './components/CancelBookingDialog';
 
 // Hooks & Utils
 import { useBookingActions } from './hooks/useBookingActions';
@@ -37,11 +38,15 @@ export const BookingDetail: React.FC = () => {
   const {
     isEditDialogOpen,
     setIsEditDialogOpen,
+    isCancelDialogOpen,
+    setIsCancelDialogOpen,
     editForm,
     setEditForm,
     handleStatusChange,
     openEditDialog,
+    openCancelDialog,
     handleEditSubmit,
+    handleCancelBooking,
   } = useBookingActions(booking, updateBooking, fetchBookings);
 
   // Fetch data on mount
@@ -163,7 +168,11 @@ export const BookingDetail: React.FC = () => {
                 Edit Booking
               </Button>
               {booking.status !== 'cancelled' && (
-                <Button className="w-full cursor-pointer" variant="destructive">
+                <Button
+                  className="w-full cursor-pointer"
+                  variant="destructive"
+                  onClick={openCancelDialog}
+                >
                   Cancel Booking
                 </Button>
               )}
@@ -189,6 +198,14 @@ export const BookingDetail: React.FC = () => {
           cruiseLines={cruiseLines}
           terminals={terminals}
           onSubmit={() => handleEditSubmit(booking.id)}
+        />
+
+        {/* Cancel Dialog */}
+        <CancelBookingDialog
+          isOpen={isCancelDialogOpen}
+          onClose={() => setIsCancelDialogOpen(false)}
+          bookingReference={booking.booking_reference}
+          onConfirm={(reason) => handleCancelBooking(booking.id, reason)}
         />
       </div>
     </AdminLayout>
