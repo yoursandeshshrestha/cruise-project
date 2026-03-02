@@ -43,6 +43,11 @@ const navGroups: NavGroup[] = [
         iconSrc: '/icons/booking.svg',
       },
       {
+        title: 'Payments',
+        href: '/admin/payments',
+        iconSrc: '/icons/money.svg',
+      },
+      {
         title: 'Booking Calendar',
         href: '/admin/booking-calendar',
         iconSrc: '/icons/calendar-02.svg',

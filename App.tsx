@@ -27,6 +27,7 @@ import { PromoCodes } from './pages/admin/PromoCodes';
 import { Pricing } from './pages/admin/Pricing';
 import { Bookings } from './pages/admin/Bookings';
 import { BookingDetail } from './pages/admin/Bookings/Detail';
+import { Payments } from './pages/admin/Payments';
 import { Arrivals } from './pages/admin/Arrivals';
 import { Analytics } from './pages/admin/Analytics';
 import { Settings } from './pages/admin/Settings';
@@ -164,6 +165,14 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <Bookings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            <ProtectedRoute>
+              <Payments />
             </ProtectedRoute>
           }
         />
