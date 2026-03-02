@@ -28,7 +28,7 @@ interface BookingsState {
   fetchBookingByReference: (reference: string) => Promise<Booking | null>;
   fetchBookingsByEmail: (email: string) => Promise<Booking[]>;
   createBooking: (booking: BookingInsert) => Promise<Booking | null>;
-  updateBooking: (id: string, updates: Partial<BookingInsert>) => Promise<void>;
+  updateBooking: (id: string, updates: Partial<Database['public']['Tables']['bookings']['Update']>) => Promise<void>;
   cancelBooking: (id: string, reason: string) => Promise<void>;
   resetPagination: () => void;
 
@@ -243,14 +243,14 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
     }
   },
 
-  updateBooking: async (id: string, updates: Partial<BookingInsert>) => {
+  updateBooking: async (id: string, updates: Partial<Database['public']['Tables']['bookings']['Update']>) => {
     console.log('[BookingsStore] Updating booking:', id);
     set({ error: null });
 
     try {
       const { data: updated, error } = await supabase
         .from('bookings')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
