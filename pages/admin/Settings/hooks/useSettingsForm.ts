@@ -19,11 +19,12 @@ export const useSettingsForm = ({
   useEffect(() => {
     if (initialized && settingsGroups.length > 0) {
       const data: SettingsFormData = {
-        defaultDailyCapacity: (getSetting<number>('capacity', 'default_daily_capacity', 100) || 0).toString(),
-        bufferSpaces: (getSetting<number>('capacity', 'buffer_spaces', 10) || 0).toString(),
-        operatingHoursOpen: getSetting<string>('operational', 'operating_hours_open', '06:00') || '06:00',
-        operatingHoursClose: getSetting<string>('operational', 'operating_hours_close', '22:00') || '22:00',
-        bookingCutoffHours: (getSetting<number>('operational', 'booking_cutoff_hours', 24) || 0).toString(),
+        defaultDailyCapacity: (getSetting<number>('capacity', 'default_daily_capacity', 100) ?? 100).toString(),
+        bufferSpaces: (getSetting<number>('capacity', 'buffer_spaces', 10) ?? 0).toString(),
+        amendmentExtensionFee: (getSetting<number>('capacity', 'amendment_extension_fee', 5) ?? 5).toString(),
+        operatingHoursOpen: '06:00',
+        operatingHoursClose: '22:00',
+        bookingCutoffHours: '0',
         companyName: getSetting<string>('business', 'company_name', 'Simple Cruise Parking') || '',
         companyEmail: getSetting<string>('business', 'company_email', 'info@simplecruiseparking.com') || '',
         companyPhone: getSetting<string>('business', 'company_phone', '+44 (0) 23 8000 0000') || '',

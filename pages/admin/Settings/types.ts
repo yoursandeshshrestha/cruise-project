@@ -4,6 +4,7 @@ export interface SettingsFormData {
   // General - Capacity
   defaultDailyCapacity: string;
   bufferSpaces: string;
+  amendmentExtensionFee: string;
   // General - Operating Hours
   operatingHoursOpen: string;
   operatingHoursClose: string;
@@ -26,6 +27,7 @@ export interface SettingsFormData {
 export const defaultFormData: SettingsFormData = {
   defaultDailyCapacity: '',
   bufferSpaces: '',
+  amendmentExtensionFee: '',
   operatingHoursOpen: '',
   operatingHoursClose: '',
   bookingCutoffHours: '',

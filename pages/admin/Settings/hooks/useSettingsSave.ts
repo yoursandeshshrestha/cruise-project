@@ -20,20 +20,21 @@ export const useSettingsSave = ({ updateGroup }: UseSettingsSaveProps) => {
 
     try {
       if (activeTab === 'general') {
+        // Validate amendment extension fee
+        const amendmentFee = parseFloat(formData.amendmentExtensionFee);
+        if (amendmentFee < 0 || isNaN(amendmentFee)) {
+          toast.error('Amendment Extension Fee must be £0 or greater');
+          setIsSaving(false);
+          return;
+        }
+
         const capacityData = {
           default_daily_capacity: parseInt(formData.defaultDailyCapacity),
           buffer_spaces: parseInt(formData.bufferSpaces),
+          amendment_extension_fee: amendmentFee,
         };
         console.log('[Settings] Saving capacity:', capacityData);
         await updateGroup('capacity', capacityData);
-
-        const operationalData = {
-          operating_hours_open: formData.operatingHoursOpen,
-          operating_hours_close: formData.operatingHoursClose,
-          booking_cutoff_hours: parseInt(formData.bookingCutoffHours),
-        };
-        console.log('[Settings] Saving operational:', operationalData);
-        await updateGroup('operational', operationalData);
 
         toast.success('General settings saved');
       } else if (activeTab === 'business') {
