@@ -20,20 +20,49 @@ if ! command -v supabase &> /dev/null; then
     exit 1
 fi
 
-# Check if we're linked to a project
-if ! supabase status &> /dev/null; then
-    echo "⚠️  Warning: Not linked to a Supabase project."
+# Check if we're logged in
+echo "🔗 Checking Supabase authentication..."
+if ! supabase projects list &> /dev/null; then
+    echo "⚠️  Warning: You need to login to Supabase first."
     echo ""
-    read -p "Do you want to link to a project now? (y/n) " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "Please enter your Supabase project reference (found in your dashboard URL):"
-        read -r PROJECT_REF
-        supabase link --project-ref "$PROJECT_REF"
+    echo "Running: supabase login"
+    supabase login
+fi
+
+# Check if project is already linked by looking at .supabase/config.toml
+if [ -f ".supabase/config.toml" ]; then
+    PROJECT_ID=$(grep "project_id" .supabase/config.toml | cut -d'"' -f2 2>/dev/null || echo "")
+    if [ -n "$PROJECT_ID" ]; then
+        echo "✅ Already linked to project: $PROJECT_ID"
+        echo ""
     else
-        echo "❌ Cannot deploy without linking to a project."
+        echo "⚠️  Configuration exists but project_id not found."
+        echo "   Attempting to continue anyway..."
+        echo ""
+    fi
+else
+    echo "⚠️  No Supabase configuration found."
+    echo ""
+    echo "Available projects:"
+    supabase projects list
+    echo ""
+    echo "Please enter your Supabase project reference (the one marked with ●):"
+    echo "Example: jsqnixorhshlrlaoneir"
+    read -r PROJECT_REF
+
+    if [ -z "$PROJECT_REF" ]; then
+        echo "❌ Project reference is required. Please run the script again and enter the project ID."
         exit 1
     fi
+
+    echo ""
+    echo "Linking to project: $PROJECT_REF"
+    if ! supabase link --project-ref "$PROJECT_REF"; then
+        echo "❌ Failed to link to project."
+        exit 1
+    fi
+    echo "✅ Successfully linked to project!"
+    echo ""
 fi
 
 echo "📦 Deploying Edge Functions..."
@@ -66,9 +95,10 @@ for func in "${FUNCTIONS[@]}"; do
 
     echo "Deploying $func..."
 
-    # Deploy all functions without JWT verification (public access)
+    # Deploy all functions without JWT verification
+    # Authentication is handled via service role key
     if supabase functions deploy "$func" --no-verify-jwt 2>&1; then
-        echo "✅ $func deployed successfully (public access)"
+        echo "✅ $func deployed successfully"
         SUCCESSFUL+=("$func")
     else
         echo "❌ Failed to deploy $func"
@@ -130,4 +160,8 @@ echo "📚 Function Endpoints:"
 echo "   - create-checkout-session: Creates Stripe Checkout Session for payments"
 echo "   - stripe-webhook: Handles Stripe payment events and confirms bookings"
 echo "   - send-booking-email: Sends booking confirmation emails via Mailgun"
+echo ""
+echo "🔒 Security:"
+echo "   - All functions deployed with --no-verify-jwt (no JWT verification)"
+echo "   - Authentication handled via Supabase service role key in function calls"
 echo ""
