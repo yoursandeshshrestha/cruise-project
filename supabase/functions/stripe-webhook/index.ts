@@ -151,6 +151,42 @@ serve(async (req) => {
 
         console.log(isAmendment ? 'Booking amended after payment:' : 'Booking confirmed after checkout:', bookingId);
 
+        // Record payment in payments table
+        const paymentAmount = session.amount_total || 0;
+        const paymentVat = Math.round(paymentAmount / 1.2 * 0.2);
+        const paymentSubtotal = paymentAmount - paymentVat;
+
+        const paymentRecord = {
+          booking_id: bookingId,
+          payment_type: isAmendment ? 'amendment' : 'new_booking',
+          stripe_payment_intent_id: paymentIntentId,
+          stripe_checkout_session_id: session.id,
+          amount: paymentAmount,
+          subtotal: paymentSubtotal,
+          vat: paymentVat,
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          metadata: isAmendment ? {
+            amendment_data: {
+              drop_off_datetime: session.metadata?.amendment_drop_off,
+              return_datetime: session.metadata?.amendment_return,
+              vehicle_registration: session.metadata?.amendment_vehicle_reg,
+              vehicle_make: session.metadata?.amendment_vehicle_make,
+            }
+          } : {},
+        };
+
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert(paymentRecord);
+
+        if (paymentError) {
+          console.error('Error recording payment:', paymentError);
+          // Don't throw - we still want to send the email even if payment recording fails
+        } else {
+          console.log('Payment recorded successfully');
+        }
+
         // Send confirmation email (for both new bookings and amendments)
         if (updatedBooking) {
           try {
