@@ -24,6 +24,8 @@ interface BookingEmailData {
   total: number;
   promo_code?: string;
   discount?: number;
+  is_amendment?: boolean;
+  amendment_charge?: number;
 }
 
 function formatDateTime(isoString: string): string {
@@ -481,9 +483,37 @@ serve(async (req) => {
     const formData = new FormData();
     formData.append('from', `Simple Cruise Parking <${fromEmail}>`);
     formData.append('to', bookingData.email);
-    formData.append('subject', `Booking Confirmation - ${bookingData.booking_reference}`);
-    formData.append('html', emailHTML);
-    formData.append('text', `
+
+    // Different subject and body for amendments vs new bookings
+    if (bookingData.is_amendment) {
+      formData.append('subject', `Booking Updated - ${bookingData.booking_reference}`);
+      formData.append('text', `
+Booking Updated!
+
+Hello ${bookingData.first_name}, your parking booking has been successfully updated.
+
+Booking Reference: ${bookingData.booking_reference}
+
+UPDATED DETAILS:
+Drop Off: ${formatDateTime(bookingData.drop_off_datetime)}
+Return: ${formatDateTime(bookingData.return_datetime)}
+Cruise Line: ${bookingData.cruise_line}
+Ship: ${bookingData.ship_name}
+${bookingData.terminal ? `Terminal: ${bookingData.terminal}\n` : ''}
+Vehicle: ${bookingData.vehicle_make} (${bookingData.vehicle_registration})
+
+${bookingData.amendment_charge ? `Amendment Charge: ${formatCurrency(bookingData.amendment_charge)}\n` : ''}
+Total Paid (including amendment): ${formatCurrency(bookingData.total)}
+
+Please arrive at least 30 minutes before your scheduled drop-off time.
+
+Need help? Email us at info@simplecruiseparking.com or call us.
+
+© ${new Date().getFullYear()} Simple Cruise Parking
+      `);
+    } else {
+      formData.append('subject', `Booking Confirmation - ${bookingData.booking_reference}`);
+      formData.append('text', `
 Booking Confirmed!
 
 Thank you ${bookingData.first_name}, your parking reservation is confirmed.
@@ -504,7 +534,10 @@ Please arrive at least 30 minutes before your scheduled drop-off time.
 Need help? Email us at info@simplecruiseparking.com
 
 © ${new Date().getFullYear()} Simple Cruise Parking
-    `);
+      `);
+    }
+
+    formData.append('html', emailHTML);
 
     // Attach PDF to email
     formData.append('attachment', pdfBlob, `booking-${bookingData.booking_reference}.pdf`);

@@ -8,10 +8,18 @@ const corsHeaders = {
 
 interface CheckoutSessionRequest {
   amount: number;
-  booking_reference: string;
-  customer_email: string;
-  customer_name: string;
-  booking_id: string;
+  booking_reference?: string;
+  customer_email?: string;
+  customer_name?: string;
+  booking_id?: string;
+  bookingId?: string;
+  isAmendment?: boolean;
+  amendmentData?: {
+    drop_off_datetime: string;
+    return_datetime: string;
+    vehicle_registration: string;
+    vehicle_make: string;
+  };
 }
 
 serve(async (req) => {
@@ -21,11 +29,17 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, booking_reference, customer_email, customer_name, booking_id }: CheckoutSessionRequest = await req.json();
+    const { amount, booking_reference, customer_email, customer_name, booking_id, bookingId, isAmendment, amendmentData }: CheckoutSessionRequest = await req.json();
+
+    const actualBookingId = bookingId || booking_id;
 
     // Validate input
-    if (!amount || !booking_reference || !customer_email || !booking_id) {
-      throw new Error('Missing required fields: amount, booking_reference, customer_email, booking_id');
+    if (!amount || !actualBookingId) {
+      throw new Error('Missing required fields: amount, booking_id');
+    }
+
+    if (!isAmendment && (!booking_reference || !customer_email)) {
+      throw new Error('Missing required fields for new booking: booking_reference, customer_email');
     }
 
     // Initialize Stripe with your secret key
@@ -41,8 +55,29 @@ serve(async (req) => {
 
     // Get the base URL for success/cancel redirects
     const origin = req.headers.get('origin') || 'http://localhost:5173';
-    const successUrl = `${origin}/booking-success?booking_ref=${booking_reference}`;
-    const cancelUrl = `${origin}/book?cancelled=true`;
+    const successUrl = isAmendment
+      ? `${origin}/manage-booking?amended=true&booking_id=${actualBookingId}`
+      : `${origin}/booking-success?booking_ref=${booking_reference}`;
+    const cancelUrl = isAmendment
+      ? `${origin}/manage-booking?cancelled_amendment=true`
+      : `${origin}/book?cancelled=true`;
+
+    // Prepare metadata
+    const metadata: Record<string, string> = {
+      booking_id: actualBookingId,
+      is_amendment: isAmendment ? 'true' : 'false',
+    };
+
+    if (isAmendment && amendmentData) {
+      metadata.amendment_drop_off = amendmentData.drop_off_datetime;
+      metadata.amendment_return = amendmentData.return_datetime;
+      metadata.amendment_vehicle_reg = amendmentData.vehicle_registration;
+      metadata.amendment_vehicle_make = amendmentData.vehicle_make;
+    }
+
+    if (booking_reference) {
+      metadata.booking_reference = booking_reference;
+    }
 
     // Create a Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -52,8 +87,10 @@ serve(async (req) => {
           price_data: {
             currency: 'gbp',
             product_data: {
-              name: 'Cruise Parking Booking',
-              description: `Booking Reference: ${booking_reference}`,
+              name: isAmendment ? 'Booking Amendment Fee' : 'Cruise Parking Booking',
+              description: isAmendment
+                ? `Amendment for booking ${actualBookingId}`
+                : `Booking Reference: ${booking_reference}`,
             },
             unit_amount: Math.round(amount * 100), // Convert to pence
           },
@@ -64,19 +101,16 @@ serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: customer_email,
-      client_reference_id: booking_id,
+      client_reference_id: actualBookingId,
       billing_address_collection: 'required',
       locale: 'en-GB',
-      metadata: {
-        booking_reference,
-        booking_id,
-      },
+      currency: 'gbp',
+      metadata,
       payment_intent_data: {
-        metadata: {
-          booking_reference,
-          booking_id,
-        },
-        description: `Parking booking ${booking_reference}`,
+        metadata,
+        description: isAmendment
+          ? `Booking amendment for ${actualBookingId}`
+          : `Parking booking ${booking_reference}`,
         receipt_email: customer_email,
       },
     });

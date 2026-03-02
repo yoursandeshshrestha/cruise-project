@@ -36,25 +36,110 @@ serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log('Checkout session completed:', session.id);
+        console.log('Session metadata:', JSON.stringify(session.metadata, null, 2));
 
         const bookingId = session.client_reference_id || session.metadata?.booking_id;
         const paymentIntentId = session.payment_intent as string;
+        const isAmendment = session.metadata?.is_amendment === 'true';
 
         if (!bookingId) {
           console.error('No booking ID found in session');
           break;
         }
 
+        // Prepare update data
+        const updateData: Record<string, unknown> = {
+          payment_status: 'completed',
+          stripe_payment_intent_id: paymentIntentId,
+          stripe_checkout_session_id: session.id,
+        };
+
+        // If this is an amendment, update the booking details
+        if (isAmendment) {
+          console.log('Processing booking amendment');
+          console.log('Amendment metadata:', {
+            drop_off: session.metadata?.amendment_drop_off,
+            return: session.metadata?.amendment_return,
+            vehicle_reg: session.metadata?.amendment_vehicle_reg,
+            vehicle_make: session.metadata?.amendment_vehicle_make,
+          });
+
+          // Fetch the current booking to get existing values
+          const { data: currentBooking, error: fetchError } = await supabase
+            .from('bookings')
+            .select('subtotal, vat, total, discount, drop_off_datetime, return_datetime, vehicle_registration, vehicle_make, amendment_history')
+            .eq('id', bookingId)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching current booking:', fetchError);
+          }
+
+          if (currentBooking && session.amount_total) {
+            const amendmentAmount = session.amount_total; // Already in pence
+            const amendmentVat = Math.round(amendmentAmount / 1.2 * 0.2); // Extract VAT
+            const amendmentSubtotal = amendmentAmount - amendmentVat;
+
+            // Create amendment history entry
+            const amendmentEntry = {
+              amended_at: new Date().toISOString(),
+              previous_drop_off_datetime: currentBooking.drop_off_datetime,
+              previous_return_datetime: currentBooking.return_datetime,
+              previous_vehicle_registration: currentBooking.vehicle_registration,
+              previous_vehicle_make: currentBooking.vehicle_make,
+              previous_subtotal: currentBooking.subtotal,
+              previous_vat: currentBooking.vat,
+              previous_total: currentBooking.total,
+              new_drop_off_datetime: session.metadata?.amendment_drop_off,
+              new_return_datetime: session.metadata?.amendment_return,
+              new_vehicle_registration: session.metadata?.amendment_vehicle_reg,
+              new_vehicle_make: session.metadata?.amendment_vehicle_make,
+              amendment_charge: amendmentAmount,
+              amendment_vat: amendmentVat,
+              amendment_subtotal: amendmentSubtotal,
+              stripe_payment_intent_id: paymentIntentId,
+              stripe_checkout_session_id: session.id,
+            };
+
+            // Add to amendment history
+            const amendmentHistory = Array.isArray(currentBooking.amendment_history)
+              ? [...currentBooking.amendment_history, amendmentEntry]
+              : [amendmentEntry];
+
+            updateData.amendment_history = amendmentHistory;
+
+            // Update booking dates and vehicle info (only if provided in metadata)
+            if (session.metadata?.amendment_drop_off) {
+              updateData.drop_off_datetime = session.metadata.amendment_drop_off;
+            }
+            if (session.metadata?.amendment_return) {
+              updateData.return_datetime = session.metadata.amendment_return;
+            }
+            if (session.metadata?.amendment_vehicle_reg) {
+              updateData.vehicle_registration = session.metadata.amendment_vehicle_reg;
+            }
+            if (session.metadata?.amendment_vehicle_make) {
+              updateData.vehicle_make = session.metadata.amendment_vehicle_make;
+            }
+
+            // Add amendment charge to existing totals
+            updateData.subtotal = currentBooking.subtotal + amendmentSubtotal;
+            updateData.vat = currentBooking.vat + amendmentVat;
+            updateData.total = currentBooking.total + amendmentAmount;
+
+            console.log('Update data for amendment:', updateData);
+          }
+          // Don't change status for amendments, just update payment
+        } else {
+          // For new bookings, confirm and set status
+          updateData.confirmed_at = new Date().toISOString();
+          updateData.status = 'confirmed';
+        }
+
         // Update booking in database by ID
         const { data: updatedBooking, error } = await supabase
           .from('bookings')
-          .update({
-            payment_status: 'completed',
-            stripe_payment_intent_id: paymentIntentId,
-            stripe_checkout_session_id: session.id,
-            confirmed_at: new Date().toISOString(),
-            status: 'confirmed',
-          })
+          .update(updateData)
           .eq('id', bookingId)
           .select()
           .single();
@@ -64,9 +149,9 @@ serve(async (req) => {
           throw error;
         }
 
-        console.log('Booking confirmed after checkout:', bookingId);
+        console.log(isAmendment ? 'Booking amended after payment:' : 'Booking confirmed after checkout:', bookingId);
 
-        // Send confirmation email
+        // Send confirmation email (for both new bookings and amendments)
         if (updatedBooking) {
           try {
             const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-booking-email`, {
@@ -93,6 +178,8 @@ serve(async (req) => {
                 total: updatedBooking.total,
                 promo_code: updatedBooking.promo_code,
                 discount: updatedBooking.discount,
+                is_amendment: isAmendment,
+                amendment_charge: isAmendment && session.amount_total ? session.amount_total : undefined,
               }),
             });
 
