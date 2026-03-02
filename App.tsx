@@ -33,6 +33,8 @@ import { Settings } from './pages/admin/Settings';
 import { Account } from './pages/admin/Account';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { ContactSubmissions } from './pages/admin/ContactSubmissions';
+import { BookingCalendar } from './pages/admin/BookingCalendar';
+import { CapacityCalendar } from './pages/admin/CapacityCalendar';
 import { Toaster } from './components/admin/ui/sonner';
 import { useAuthInit } from './hooks/useAuthInit';
 import { MaintenancePage } from './components/client/MaintenancePage';
@@ -162,6 +164,22 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <Bookings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/booking-calendar"
+          element={
+            <ProtectedRoute>
+              <BookingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/capacity-calendar"
+          element={
+            <ProtectedRoute>
+              <CapacityCalendar />
             </ProtectedRoute>
           }
         />
