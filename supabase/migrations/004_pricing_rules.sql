@@ -15,7 +15,7 @@ CREATE TABLE pricing_rules (
   end_date DATE,
   is_active BOOLEAN DEFAULT TRUE,
   display_order INTEGER NOT NULL DEFAULT 0,
-  vat_rate DECIMAL(5,4) NOT NULL DEFAULT 0.20,
+  vat_rate DECIMAL(5,4) NOT NULL DEFAULT 0.00,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -55,13 +55,13 @@ CREATE POLICY "pricing_rules_delete_authenticated"
   USING (true);
 
 -- SEED DATA
--- Default pricing: £12.50/day with £45 minimum and 20% VAT
+-- Default pricing: £12.50/day with £45 minimum and 0% VAT
 INSERT INTO pricing_rules (name, price_per_day, minimum_charge, vat_rate, is_active, display_order)
 VALUES (
   'Standard Pricing',
   1250, -- £12.50 in pence
   4500, -- £45 in pence
-  0.20, -- 20% VAT
+  0.00, -- 0% VAT
   true,
   0
 );
@@ -70,5 +70,5 @@ VALUES (
 COMMENT ON TABLE pricing_rules IS 'Parking pricing rules with seasonal support - RLS: anon (active only), authenticated (full)';
 COMMENT ON COLUMN pricing_rules.price_per_day IS 'Price per day in pence (e.g., 1250 = £12.50)';
 COMMENT ON COLUMN pricing_rules.minimum_charge IS 'Minimum charge in pence regardless of duration';
-COMMENT ON COLUMN pricing_rules.vat_rate IS 'VAT rate as decimal (e.g., 0.20 for 20%, 0.15 for 15%)';
+COMMENT ON COLUMN pricing_rules.vat_rate IS 'VAT rate as decimal (e.g., 0.20 for 20%, 0.00 for 0%)';
 COMMENT ON COLUMN pricing_rules.display_order IS 'Display order for admin UI (lower numbers first)';
