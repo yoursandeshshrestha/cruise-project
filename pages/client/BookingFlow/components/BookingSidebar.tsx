@@ -62,7 +62,6 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
   pricingPriority,
 }) => {
   const minStayCost = settings?.minimumStayCost || 45.00;
-  const vatRate = settings?.vatRate || 0.20;
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
   const {
@@ -75,6 +74,10 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
     finalTotal,
     pricingBreakdown,
   } = calculations;
+
+  // Calculate VAT rate from the actual VAT amount and base cost
+  const baseCost = parkingCost + addOnsCost;
+  const vatRate = baseCost > 0 ? vatAmount / baseCost : 0;
 
   const toggleGroup = (index: number) => {
     setExpandedGroups(prev => ({
@@ -202,10 +205,12 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
               <span>£{addOnsCost.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>VAT ({(vatRate * 100).toFixed(0)}%)</span>
-            <span>£{vatAmount.toFixed(2)}</span>
-          </div>
+          {vatRate > 0 && (
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>VAT ({(vatRate * 100).toFixed(0)}%)</span>
+              <span>£{vatAmount.toFixed(2)}</span>
+            </div>
+          )}
           {(numberOfDays > 0 || addOnsCost > 0) && (
             <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-gray-200">
               <span>Subtotal</span>

@@ -64,8 +64,6 @@ export const useBookingSubmission = ({
       const returnDateTime = new Date(`${booking.returnDate}T${booking.returnTime}`).toISOString();
 
       // Calculate costs for database storage
-      const vatRate = parsedSettings?.vatRate || 0.20;
-
       // Recalculate parking cost using day-by-day pricing
       const start = new Date(booking.dropOffDate);
       const end = new Date(booking.returnDate);
@@ -74,6 +72,7 @@ export const useBookingSubmission = ({
 
       const isVan = booking.vehicleType === 'van';
       let parkingCost = 0;
+      let firstDayPricing = null;
 
       // Calculate cost for each individual day
       for (let i = 0; i < diffDays; i++) {
@@ -87,7 +86,13 @@ export const useBookingSubmission = ({
           base_van_price: 36.00,
           additional_day_rate: ADDITIONAL_DAY_RATE,
           additional_day_rate_van: 18.00,
+          vat_rate: parsedSettings?.vatRate ?? 0.20,
         };
+
+        // Store first day's pricing rule for VAT rate
+        if (i === 0) {
+          firstDayPricing = dayPricing;
+        }
 
         let dailyRate: number;
 
@@ -105,6 +110,9 @@ export const useBookingSubmission = ({
 
         parkingCost += dailyRate;
       }
+
+      // Use VAT rate from first day's pricing rule, fallback to settings, then default to 0.20
+      const vatRate = (firstDayPricing?.vat_rate ?? parsedSettings?.vatRate) ?? 0.20;
 
       const addOnsCost = booking.selectedAddOns.reduce((acc, slug) => {
         const addon = addOns.find(a => a.slug === slug);

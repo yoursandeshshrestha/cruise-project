@@ -56,12 +56,11 @@ export const useBookingCalculations = (
   }, [initialized, fetchPricingRules]);
 
   return useMemo(() => {
-    const vatRate = settings?.vatRate || 0.20;
-
     // Calculate number of days and breakdown by pricing period
     let numberOfDays = 0;
     let parkingCost = 0;
     const pricingBreakdown: PricingBreakdownItem[] = [];
+    let firstDayPricing = null;
 
     if (booking.dropOffDate && booking.returnDate) {
       const start = new Date(booking.dropOffDate);
@@ -91,7 +90,13 @@ export const useBookingCalculations = (
           base_van_price: 36.00,
           additional_day_rate: ADDITIONAL_DAY_RATE,
           additional_day_rate_van: 18.00,
+          vat_rate: settings?.vatRate ?? 0.20,
         };
+
+        // Store first day's pricing rule for VAT rate
+        if (i === 0) {
+          firstDayPricing = dayPricing;
+        }
 
         let dailyRate: number;
 
@@ -181,6 +186,9 @@ export const useBookingCalculations = (
       const addon = addOns.find(a => a.slug === slug);
       return acc + (addon ? addon.price : 0);
     }, 0);
+
+    // Use VAT rate from first day's pricing rule, fallback to settings, then default to 0.20
+    const vatRate = (firstDayPricing?.vat_rate ?? settings?.vatRate) ?? 0.20;
 
     // Calculate base cost and VAT
     const baseCost = parkingCost + addOnsCost;
