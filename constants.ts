@@ -59,28 +59,34 @@ export const TERMINALS = [
   'Horizon Cruise Terminal'
 ];
 
+/**
+ * @deprecated Use pricing rules from the database via usePricingStore instead
+ */
 export const FIRST_DAY_RATE = 26;
+/**
+ * @deprecated Use pricing rules from the database via usePricingStore instead
+ */
 export const ADDITIONAL_DAY_RATE = 13;
-export const VAN_SURCHARGE_MULTIPLIER = 1.4;
 
+/**
+ * Calculate parking price using flat daily rate
+ * @deprecated This function is deprecated. Use getPricingForDate from usePricingStore for day-by-day pricing calculations with database values
+ */
 export function calculateParkingPrice(
   days: number,
   vehicleType: VehicleType = 'car',
-  additionalDayRate: number = ADDITIONAL_DAY_RATE,
-  vanAdditionalDayRate: number = 18.00,
-  baseCarPrice: number = FIRST_DAY_RATE,
-  baseVanPrice: number = 36.00
+  pricePerDay: number = 0,
+  vanMultiplier: number = 0
 ): number {
   if (days <= 0) return 0;
 
-  // Linear pricing: Base price + (days - 1) × additional day rate
-  if (vehicleType === 'van') {
-    // Van: base van price + (days - 1) × van additional day rate
-    return baseVanPrice + ((days - 1) * vanAdditionalDayRate);
-  } else {
-    // Car: base car price + (days - 1) × car additional day rate
-    return baseCarPrice + ((days - 1) * additionalDayRate);
-  }
+  // Flat rate pricing: price per day for cars, or car price × multiplier (rounded) for vans
+  const carTotal = pricePerDay * days;
+  const dailyTotal = vehicleType === 'van'
+    ? Math.round(carTotal * vanMultiplier)
+    : carTotal;
+
+  return dailyTotal;
 }
 
 export function getParkingDaysLabel(days: number): string {

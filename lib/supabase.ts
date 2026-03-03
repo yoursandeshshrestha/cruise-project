@@ -519,54 +519,48 @@ export type Database = {
       }
       pricing_rules: {
         Row: {
-          additional_day_rate: number | null
-          additional_day_rate_van: number | null
-          base_car_price: number | null
-          base_van_price: number | null
           created_at: string | null
           display_order: number
           end_date: string | null
           id: string
           is_active: boolean | null
           name: string
+          price_per_day: number
           priority: number
           reason: string | null
           start_date: string | null
           updated_at: string | null
+          van_multiplier: number
           vat_rate: number
         }
         Insert: {
-          additional_day_rate?: number | null
-          additional_day_rate_van?: number | null
-          base_car_price?: number | null
-          base_van_price?: number | null
           created_at?: string | null
           display_order?: number
           end_date?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          price_per_day?: number
           priority?: number
           reason?: string | null
           start_date?: string | null
           updated_at?: string | null
+          van_multiplier?: number
           vat_rate?: number
         }
         Update: {
-          additional_day_rate?: number | null
-          additional_day_rate_van?: number | null
-          base_car_price?: number | null
-          base_van_price?: number | null
           created_at?: string | null
           display_order?: number
           end_date?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          price_per_day?: number
           priority?: number
           reason?: string | null
           start_date?: string | null
           updated_at?: string | null
+          van_multiplier?: number
           vat_rate?: number
         }
         Relationships: []
