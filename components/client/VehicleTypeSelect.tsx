@@ -85,7 +85,7 @@ export const VehicleTypeSelect: React.FC<VehicleTypeSelectProps> = ({
           </div>
           <div className="flex-1">
             <div className="font-semibold text-gray-900">Van</div>
-            <div className="text-xs text-amber-600">+40% surcharge</div>
+            <div className="text-xs text-amber-600">Price may increase</div>
           </div>
         </label>
       </div>
