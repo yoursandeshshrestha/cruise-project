@@ -68,7 +68,7 @@ export const PricingForm: React.FC<PricingFormProps> = ({
 
             {/* VAT Rate */}
             <div className="space-y-2">
-              <Label htmlFor="vat_rate" className="cursor-pointer">VAT Rate (%) *</Label>
+              <Label htmlFor="vat_rate" className="cursor-pointer">VAT Rate (%)</Label>
               <Input
                 id="vat_rate"
                 type="number"
@@ -77,10 +77,12 @@ export const PricingForm: React.FC<PricingFormProps> = ({
                 max="100"
                 value={formData.vat_rate}
                 onChange={(e) => setFormData({ ...formData, vat_rate: e.target.value })}
-                placeholder="20"
-                required
+                placeholder="20 (or 0 for no VAT)"
                 className="max-w-xs"
               />
+              <p className="text-xs text-muted-foreground">
+                Set to 0 if no VAT should be applied
+              </p>
             </div>
 
             {/* Tiered Pricing Configuration */}

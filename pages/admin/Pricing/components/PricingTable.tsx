@@ -77,7 +77,7 @@ export const PricingTable: React.FC<PricingTableProps> = ({
                   <TableCell>£{(rule.additional_day_rate || 0).toFixed(2)}</TableCell>
                   <TableCell>£{(rule.base_van_price || 0).toFixed(2)}</TableCell>
                   <TableCell>£{(rule.additional_day_rate_van || 0).toFixed(2)}</TableCell>
-                  <TableCell>{((rule.vat_rate || 0.20) * 100).toFixed(0)}%</TableCell>
+                  <TableCell>{((rule.vat_rate ?? 0.20) * 100).toFixed(0)}%</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {rule.start_date ? new Date(rule.start_date).toLocaleDateString('en-GB') : (isStandardPricing ? 'All year' : '—')}
                   </TableCell>

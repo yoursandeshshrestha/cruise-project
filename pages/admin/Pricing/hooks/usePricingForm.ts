@@ -24,16 +24,16 @@ export const usePricingForm = () => {
       setFormData({
         id: pricingRule.id,
         name: pricingRule.name,
-        vat_rate: ((pricingRule.vat_rate || 0.20) * 100).toString(),
-        base_car_price: (pricingRule.base_car_price || 26.00).toFixed(2),
-        base_van_price: (pricingRule.base_van_price || 36.00).toFixed(2),
-        additional_day_rate: (pricingRule.additional_day_rate || 13.00).toFixed(2),
-        additional_day_rate_van: (pricingRule.additional_day_rate_van || 18.00).toFixed(2),
+        vat_rate: ((pricingRule.vat_rate ?? 0.20) * 100).toString(),
+        base_car_price: (pricingRule.base_car_price ?? 26.00).toFixed(2),
+        base_van_price: (pricingRule.base_van_price ?? 36.00).toFixed(2),
+        additional_day_rate: (pricingRule.additional_day_rate ?? 13.00).toFixed(2),
+        additional_day_rate_van: (pricingRule.additional_day_rate_van ?? 18.00).toFixed(2),
         start_date: pricingRule.start_date ? new Date(pricingRule.start_date) : undefined,
         end_date: pricingRule.end_date ? new Date(pricingRule.end_date) : undefined,
         is_active: pricingRule.is_active,
-        priority: (pricingRule.priority || 1) as 1 | 2,
-        reason: pricingRule.reason || '',
+        priority: (pricingRule.priority ?? 1) as 1 | 2,
+        reason: pricingRule.reason ?? '',
       });
     } else {
       setFormData(INITIAL_FORM_STATE);

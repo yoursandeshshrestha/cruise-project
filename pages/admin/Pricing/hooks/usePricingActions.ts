@@ -25,7 +25,8 @@ export const usePricingActions = ({
       return 'Please enter a pricing rule name';
     }
 
-    if (!formData.vat_rate || parseFloat(formData.vat_rate) < 0 || parseFloat(formData.vat_rate) > 100) {
+    const vatRate = parseFloat(formData.vat_rate);
+    if (formData.vat_rate === '' || isNaN(vatRate) || vatRate < 0 || vatRate > 100) {
       return 'Please enter a valid VAT rate between 0 and 100';
     }
 
