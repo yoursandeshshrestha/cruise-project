@@ -124,9 +124,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       .sort((a, b) => b.display_order - a.display_order)[0];
 
     // Convert pence to pounds and get VAT rate
-    const dailyRate = activePricing ? (activePricing.base_car_price || 0) / 100 : 12.50;
-    const minimumStayCost = activePricing ? (activePricing.base_car_price || 0) / 100 : 45.00;
-    const vatRate = activePricing ? activePricing.vat_rate : 0.20; // Default to 20% if no pricing rule
+    const dailyRate = activePricing ? (activePricing.base_car_price ?? 0) / 100 : 12.50;
+    const minimumStayCost = activePricing ? (activePricing.base_car_price ?? 0) / 100 : 45.00;
+    const vatRate = activePricing ? (activePricing.vat_rate ?? 0.20) : 0.20; // Default to 20% if no pricing rule
 
     return {
       dailyRate,
@@ -316,6 +316,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       console.log('[SettingsStore] Fetched pricing rules:', data?.length || 0);
       set({ pricingRules: data || [], loading: false });
+
+      // Recalculate parsed settings after state is updated
+      const parsedSettings = get().getParsedSettings();
+      set({ parsedSettings });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch pricing rules';
       console.error('[SettingsStore] Error fetching pricing rules:', errorMessage);
@@ -342,6 +346,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         pricingRules: [...state.pricingRules, newRule],
         loading: false
       }));
+
+      // Recalculate parsed settings after state is updated
+      const parsedSettings = get().getParsedSettings();
+      set({ parsedSettings });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create pricing rule';
       console.error('[SettingsStore] Error creating pricing rule:', errorMessage);
@@ -370,6 +378,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         ),
         loading: false
       }));
+
+      // Recalculate parsed settings after state is updated
+      const parsedSettings = get().getParsedSettings();
+      set({ parsedSettings });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update pricing rule';
       console.error('[SettingsStore] Error updating pricing rule:', errorMessage);
@@ -396,6 +408,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         pricingRules: state.pricingRules.filter(pr => pr.id !== id),
         loading: false
       }));
+
+      // Recalculate parsed settings after state is updated
+      const parsedSettings = get().getParsedSettings();
+      set({ parsedSettings });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete pricing rule';
       console.error('[SettingsStore] Error deleting pricing rule:', errorMessage);
