@@ -1,74 +1,42 @@
 -- =============================================================================
--- Pricing Rules Table
+-- PRICING_RULES TABLE
 -- =============================================================================
--- Parking pricing rules including seasonal and date-based pricing
--- Created: 2026-02-26
+-- Parking pricing rules with flat daily rate
+-- Vans: Final price = standard total × van_multiplier (rounded to nearest pound)
 -- =============================================================================
 
--- TABLE DEFINITION
 CREATE TABLE pricing_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
-  price_per_day INTEGER NOT NULL CHECK (price_per_day > 0), -- in pence
-  minimum_charge INTEGER NOT NULL CHECK (minimum_charge > 0), -- in pence
+  price_per_day DECIMAL(10,2) NOT NULL DEFAULT 15.00,
+  van_multiplier DECIMAL(4,2) NOT NULL DEFAULT 1.5,
+  vat_rate DECIMAL(5,4) NOT NULL DEFAULT 0.00,
   start_date DATE,
   end_date DATE,
   is_active BOOLEAN DEFAULT TRUE,
   display_order INTEGER NOT NULL DEFAULT 0,
-  vat_rate DECIMAL(5,4) NOT NULL DEFAULT 0.00,
+  priority INTEGER NOT NULL DEFAULT 2 CHECK (priority IN (1, 2)),
+  reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- INDEXES
+-- Indexes
 CREATE INDEX idx_pricing_rules_dates ON pricing_rules(start_date, end_date);
 CREATE INDEX idx_pricing_rules_active ON pricing_rules(is_active);
+CREATE INDEX idx_pricing_rules_priority_dates ON pricing_rules(priority, start_date, end_date);
 
--- TRIGGER
+-- Triggers
 CREATE TRIGGER update_pricing_rules_updated_at
   BEFORE UPDATE ON pricing_rules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
 
--- ROW LEVEL SECURITY
-ALTER TABLE pricing_rules ENABLE ROW LEVEL SECURITY;
-
--- Public can view active pricing, authenticated can manage
-CREATE POLICY "pricing_rules_select_anon"
-  ON pricing_rules FOR SELECT TO anon
-  USING (is_active = true);
-
-CREATE POLICY "pricing_rules_select_authenticated"
-  ON pricing_rules FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "pricing_rules_insert_authenticated"
-  ON pricing_rules FOR INSERT TO authenticated
-  WITH CHECK (true);
-
-CREATE POLICY "pricing_rules_update_authenticated"
-  ON pricing_rules FOR UPDATE TO authenticated
-  USING (true) WITH CHECK (true);
-
-CREATE POLICY "pricing_rules_delete_authenticated"
-  ON pricing_rules FOR DELETE TO authenticated
-  USING (true);
-
--- SEED DATA
--- Default pricing: £12.50/day with £45 minimum and 0% VAT
-INSERT INTO pricing_rules (name, price_per_day, minimum_charge, vat_rate, is_active, display_order)
-VALUES (
-  'Standard Pricing',
-  1250, -- £12.50 in pence
-  4500, -- £45 in pence
-  0.00, -- 0% VAT
-  true,
-  0
-);
-
--- COMMENTS
-COMMENT ON TABLE pricing_rules IS 'Parking pricing rules with seasonal support - RLS: anon (active only), authenticated (full)';
-COMMENT ON COLUMN pricing_rules.price_per_day IS 'Price per day in pence (e.g., 1250 = £12.50)';
-COMMENT ON COLUMN pricing_rules.minimum_charge IS 'Minimum charge in pence regardless of duration';
+-- Comments
+COMMENT ON TABLE pricing_rules IS 'Parking pricing rules with flat daily rate';
+COMMENT ON COLUMN pricing_rules.price_per_day IS 'Flat daily rate for standard vehicles in pounds (e.g., 15.00 = £15/day)';
+COMMENT ON COLUMN pricing_rules.van_multiplier IS 'Multiplier for van pricing (e.g., 1.5 means vans cost 1.5× car price, rounded to nearest £)';
 COMMENT ON COLUMN pricing_rules.vat_rate IS 'VAT rate as decimal (e.g., 0.20 for 20%, 0.00 for 0%)';
 COMMENT ON COLUMN pricing_rules.display_order IS 'Display order for admin UI (lower numbers first)';
+COMMENT ON COLUMN pricing_rules.priority IS 'Priority level: 1 = custom pricing (overrides base), 2 = standard/base pricing';
+COMMENT ON COLUMN pricing_rules.reason IS 'Optional explanation for custom pricing (e.g., "Peak season", "Special event")';
