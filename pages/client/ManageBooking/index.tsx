@@ -188,8 +188,6 @@ export const ManageBooking: React.FC = () => {
 
   // Calculate additional pricing for amended dates - follows EXACT main booking flow logic
   const calculateAdditionalPricing = (oldDropOff: string, oldReturn: string, newDropOff: string, newReturn: string) => {
-    const VAT_RATE = 0.20;
-
     // Check if dates actually changed (not just time)
     const oldDropOffDate = format(new Date(oldDropOff), 'yyyy-MM-dd');
     const oldReturnDate = format(new Date(oldReturn), 'yyyy-MM-dd');
@@ -199,7 +197,7 @@ export const ManageBooking: React.FC = () => {
 
     if (!datesChanged) {
       // Only time changed, no charge
-      return { additionalDays: 0, additionalCharge: 0, dailyBreakdown: [], amendmentFee: 0, pricingReason: null, pricingPriority: null };
+      return { additionalDays: 0, additionalCharge: 0, dailyBreakdown: [], amendmentFee: 0, pricingReason: null, pricingPriority: null, vatRate: 0 };
     }
 
     // Calculate days
@@ -229,11 +227,17 @@ export const ManageBooking: React.FC = () => {
     const dailyBreakdown: Array<{ day: number; date: string; rate: number }> = [];
     let highestPriority: number | null = null;
     let pricingReason: string | null = null;
+    let firstDayPricing = null;
 
     for (let i = 0; i < newDays; i++) {
       const currentDate = new Date(newStartDate);
       currentDate.setDate(currentDate.getDate() + i);
       const pricing = getPricingForDate(currentDate);
+
+      // Store first day's pricing for VAT rate
+      if (i === 0) {
+        firstDayPricing = pricing;
+      }
 
       // Day 1 uses base price, subsequent days use additional_day_rate (same as main booking flow)
       let dailyRate: number;
@@ -259,6 +263,9 @@ export const ManageBooking: React.FC = () => {
         rate: dailyRate,
       });
     }
+
+    // Get VAT rate from first day's pricing rule, fallback to settings
+    const VAT_RATE = (firstDayPricing?.vat_rate ?? parsedSettings?.vatRate) ?? 0.20;
 
     // FOLLOW EXACT MAIN BOOKING FLOW LOGIC:
     // baseCost = parkingCost + addOnsCost
@@ -290,6 +297,8 @@ export const ManageBooking: React.FC = () => {
     return {
       additionalDays: newDays - oldDays,
       additionalCharge: amendmentTotal, // in POUNDS (not pence) - same as main booking flow
+      additionalCost: amendmentBaseCost, // in pounds (excl VAT)
+      additionalVat: amendmentVat, // in pounds (VAT only)
       dailyBreakdown,
       amendmentFee: amendmentFee, // in pounds
       pricingReason: highestPriority === 1 ? pricingReason : null,
@@ -300,6 +309,7 @@ export const ManageBooking: React.FC = () => {
       newBookingCost: newBaseCost, // in pounds (excl VAT)
       newParkingCost, // in pounds (parking only)
       priceDifference: chargeableDifference, // in pounds (excl VAT)
+      vatRate: VAT_RATE, // VAT rate from pricing rules
     };
   };
 
@@ -320,6 +330,8 @@ export const ManageBooking: React.FC = () => {
   const [amendmentDetails, setAmendmentDetails] = useState<{
     additionalDays: number;
     additionalCharge: number;
+    additionalCost: number;
+    additionalVat: number;
     unavailableDates: string[];
     dailyBreakdown: Array<{ day: number; date: string; rate: number }>;
     amendmentFee: number;
@@ -331,6 +343,7 @@ export const ManageBooking: React.FC = () => {
     newBookingCost: number;
     newParkingCost: number;
     priceDifference: number;
+    vatRate: number;
   } | null>(null);
 
   // Cancel Modal State
@@ -488,6 +501,25 @@ export const ManageBooking: React.FC = () => {
     try {
       setIsSavingAmend(true);
 
+      // Calculate VAT breakdown if not already available
+      const vatRate = amendmentDetails.vatRate ?? 0;
+      const amendmentVat = amendmentDetails.additionalVat ??
+        (vatRate > 0 ? (amendmentDetails.additionalCharge / (1 + vatRate) * vatRate) : 0);
+      const amendmentSubtotal = amendmentDetails.additionalCost ??
+        (amendmentDetails.additionalCharge - amendmentVat);
+
+      console.log('Amendment payment details:', {
+        additionalCharge: amendmentDetails.additionalCharge,
+        vatRate,
+        amendmentSubtotal,
+        amendmentVat,
+      });
+
+      // Validate numbers before sending
+      if (isNaN(amendmentSubtotal) || isNaN(amendmentVat)) {
+        throw new Error('Invalid amendment calculation - please try recalculating');
+      }
+
       // Create Stripe checkout session for amendment
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
@@ -501,6 +533,8 @@ export const ManageBooking: React.FC = () => {
             return_datetime: amendForm.returnDateTime,
             vehicle_registration: amendForm.vehicleReg,
             vehicle_make: amendForm.vehicleMake,
+            amendment_subtotal: amendmentSubtotal.toFixed(2), // Base cost before VAT (2 decimal places)
+            amendment_vat: amendmentVat.toFixed(2), // VAT amount (2 decimal places)
           },
         },
       });
@@ -1040,10 +1074,12 @@ export const ManageBooking: React.FC = () => {
                                                 <span>£{amendmentDetails.addOnsCost.toFixed(2)}</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between text-gray-600">
-                                            <span>VAT (20%)</span>
-                                            <span>£{((amendmentDetails.oldBookingCost / 1.2) * 0.2).toFixed(2)}</span>
-                                        </div>
+                                        {amendmentDetails.vatRate > 0 && (
+                                          <div className="flex justify-between text-gray-600">
+                                              <span>VAT ({(amendmentDetails.vatRate * 100).toFixed(0)}%)</span>
+                                              <span>£{(amendmentDetails.oldBookingCost * amendmentDetails.vatRate / (1 + amendmentDetails.vatRate)).toFixed(2)}</span>
+                                          </div>
+                                        )}
                                         <div className="flex justify-between text-gray-900 font-semibold pt-1 border-t border-gray-300">
                                             <span>Total Paid</span>
                                             <span>£{amendmentDetails.oldBookingCost.toFixed(2)}</span>
@@ -1107,10 +1143,12 @@ export const ManageBooking: React.FC = () => {
                                             <span className="font-medium">£{(amendmentDetails.priceDifference + amendmentDetails.amendmentFee).toFixed(2)}</span>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">VAT (20%)</span>
-                                        <span className="font-medium">£{(amendmentDetails.additionalCharge / 1.2 * 0.2).toFixed(2)}</span>
-                                    </div>
+                                    {amendmentDetails.vatRate > 0 && (
+                                      <div className="flex justify-between text-sm">
+                                          <span className="text-gray-600">VAT ({(amendmentDetails.vatRate * 100).toFixed(0)}%)</span>
+                                          <span className="font-medium">£{(amendmentDetails.additionalCharge * amendmentDetails.vatRate / (1 + amendmentDetails.vatRate)).toFixed(2)}</span>
+                                      </div>
+                                    )}
                                 </div>
                             </div>
 
