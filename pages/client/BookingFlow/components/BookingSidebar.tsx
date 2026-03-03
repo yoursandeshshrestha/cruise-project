@@ -48,6 +48,7 @@ interface BookingSidebarProps {
   };
   pricingReason?: string | null;
   pricingPriority?: number;
+  vanMultiplier?: number;
 }
 
 export const BookingSidebar: React.FC<BookingSidebarProps> = ({
@@ -60,6 +61,7 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
   cancellationPolicy,
   pricingReason,
   pricingPriority,
+  vanMultiplier,
 }) => {
   const minStayCost = settings?.minimumStayCost || 45.00;
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
@@ -128,7 +130,9 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
           <div>
             <p className="text-gray-500 text-xs">Vehicle Type</p>
             <p className="font-semibold">
-              {booking.vehicleType === 'car' ? 'Car' : 'Van (+40%)'}
+              {booking.vehicleType === 'car'
+                ? 'Car'
+                : `Van (${vanMultiplier?.toFixed(1) || '1.5'}× car price)`}
             </p>
           </div>
         )}

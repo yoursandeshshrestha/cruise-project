@@ -44,9 +44,9 @@ export const useBookingCalculations = (
   settings: Settings | null,
   addOns: AddOn[],
   promoDiscount: number,
-  activePricing?: { base_car_price?: number; base_van_price?: number; additional_day_rate?: number; additional_day_rate_van?: number } | null
+  activePricing?: { price_per_day?: number; van_multiplier?: number } | null
 ): CalculationResult => {
-  const { getPricingForDate, fetchPricingRules, initialized } = usePricingStore();
+  const { getPricingForDate, fetchPricingRules, initialized, pricingRules } = usePricingStore();
 
   // Fetch pricing rules on mount if not initialized
   useEffect(() => {
@@ -54,6 +54,9 @@ export const useBookingCalculations = (
       fetchPricingRules();
     }
   }, [initialized, fetchPricingRules]);
+
+  // Get standard pricing (priority 2) as fallback
+  const standardPricing = pricingRules.find(rule => rule.priority === 2 && rule.is_active);
 
   return useMemo(() => {
     // Calculate number of days and breakdown by pricing period
@@ -77,42 +80,27 @@ export const useBookingCalculations = (
         dayNumber: number;
       }> = [];
 
-      // Calculate cost for each individual day
+      // Calculate cost for each individual day using flat rate pricing
+      let carParkingCost = 0;
+      let vanMultiplier = standardPricing?.van_multiplier ?? 0;
+
       for (let i = 0; i < numberOfDays; i++) {
         const currentDate = new Date(start);
         currentDate.setDate(currentDate.getDate() + i);
 
-        // Get pricing rule for this specific day
-        const dayPricing = getPricingForDate(currentDate) || {
-          id: 'default',
-          name: 'Standard Pricing',
-          base_car_price: 26.00,
-          base_van_price: 36.00,
-          additional_day_rate: ADDITIONAL_DAY_RATE,
-          additional_day_rate_van: 18.00,
-          vat_rate: settings?.vatRate ?? 0.20,
-        };
+        // Get pricing rule for this specific day, fallback to standard pricing
+        const dayPricing = getPricingForDate(currentDate) || standardPricing;
 
-        // Store first day's pricing rule for VAT rate
+        // Store first day's pricing rule for VAT rate and van multiplier
         if (i === 0) {
           firstDayPricing = dayPricing;
+          vanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
         }
 
-        let dailyRate: number;
+        // Flat rate pricing: always use car rate per day
+        const dailyRate = dayPricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
+        carParkingCost += dailyRate;
 
-        if (i === 0) {
-          // First day of booking: use base price
-          dailyRate = isVan
-            ? (dayPricing.base_van_price || 36.00)
-            : (dayPricing.base_car_price || 26.00);
-        } else {
-          // All other days: use additional day rate
-          dailyRate = isVan
-            ? (dayPricing.additional_day_rate_van || 18.00)
-            : (dayPricing.additional_day_rate || ADDITIONAL_DAY_RATE);
-        }
-
-        parkingCost += dailyRate;
         dailyCosts.push({
           name: dayPricing.name || 'Standard Pricing',
           rate: dailyRate,
@@ -121,6 +109,9 @@ export const useBookingCalculations = (
           dayNumber: i + 1,
         });
       }
+
+      // Apply van multiplier to total if vehicle is a van
+      parkingCost = isVan ? Math.round(carParkingCost * vanMultiplier) : carParkingCost;
 
       // Group consecutive days with the same pricing rule for display
       interface PricingGroup {
@@ -187,8 +178,8 @@ export const useBookingCalculations = (
       return acc + (addon ? addon.price : 0);
     }, 0);
 
-    // Use VAT rate from first day's pricing rule, fallback to settings, then default to 0.20
-    const vatRate = (firstDayPricing?.vat_rate ?? settings?.vatRate) ?? 0.20;
+    // Use VAT rate from first day's pricing rule, fallback to settings, then default to 0.00
+    const vatRate = (firstDayPricing?.vat_rate ?? settings?.vatRate) ?? 0.00;
 
     // Calculate base cost and VAT
     const baseCost = parkingCost + addOnsCost;

@@ -30,19 +30,12 @@ export const Prices: React.FC = () => {
   const standardPricing = activePricingRules.find(rule => rule.priority === 2) || activePricingRules[0];
 
   // Get pricing configuration from standard pricing rule
-  const baseCarPrice = standardPricing?.base_car_price || FIRST_DAY_RATE;
-  const baseVanPrice = standardPricing?.base_van_price || 36.00;
-  const additionalDayRate = standardPricing?.additional_day_rate || ADDITIONAL_DAY_RATE;
-  const vanAdditionalDayRate = standardPricing?.additional_day_rate_van || 18.00;
+  const pricePerDay = standardPricing?.price_per_day ?? 0;
+  const vanMultiplier = standardPricing?.van_multiplier ?? 0;
 
-  // Linear pricing: Base price + (days - 1) × additional day rate
-  const calculateCarPrice = (days: number) => baseCarPrice + ((days - 1) * additionalDayRate);
-  const calculateVanPrice = (days: number) => baseVanPrice + ((days - 1) * vanAdditionalDayRate);
-
-  // Calculate van surcharge percentage (using 1-day as reference)
-  const vanSurchargePercent = baseCarPrice > 0
-    ? Math.round(((baseVanPrice - baseCarPrice) / baseCarPrice) * 100)
-    : 40;
+  // Flat rate pricing: price per day for cars, total car price × multiplier (rounded) for vans
+  const calculateCarPrice = (days: number) => pricePerDay * days;
+  const calculateVanPrice = (days: number) => Math.round(calculateCarPrice(days) * vanMultiplier);
 
   const pricingTiers = [
     { days: 1, carPrice: calculateCarPrice(1), label: '1 Day' },
@@ -90,17 +83,11 @@ export const Prices: React.FC = () => {
           <div className="space-y-8 mb-20">
             {activePricingRules.map((pricingRule) => {
               const isStandardPricing = pricingRule.priority === 2;
-              const ruleBaseCarPrice = pricingRule.base_car_price || FIRST_DAY_RATE;
-              const ruleBaseVanPrice = pricingRule.base_van_price || 36.00;
-              const ruleAdditionalDayRate = pricingRule.additional_day_rate || ADDITIONAL_DAY_RATE;
-              const ruleVanAdditionalDayRate = pricingRule.additional_day_rate_van || 18.00;
+              const rulePricePerDay = pricingRule.price_per_day ?? 0;
+              const ruleVanMultiplier = pricingRule.van_multiplier ?? 0;
 
-              const calculateRuleCarPrice = (days: number) => ruleBaseCarPrice + ((days - 1) * ruleAdditionalDayRate);
-              const calculateRuleVanPrice = (days: number) => ruleBaseVanPrice + ((days - 1) * ruleVanAdditionalDayRate);
-
-              const ruleVanSurchargePercent = ruleBaseCarPrice > 0
-                ? Math.round(((ruleBaseVanPrice - ruleBaseCarPrice) / ruleBaseCarPrice) * 100)
-                : 40;
+              const calculateRuleCarPrice = (days: number) => rulePricePerDay * days;
+              const calculateRuleVanPrice = (days: number) => Math.round(calculateRuleCarPrice(days) * ruleVanMultiplier);
 
               const rulePricingTiers = [
                 { days: 1, carPrice: calculateRuleCarPrice(1), label: '1 Day' },
@@ -159,7 +146,7 @@ export const Prices: React.FC = () => {
                               <th className="text-right p-3 font-semibold text-brand-dark">Car</th>
                               <th className="text-right p-3 font-semibold text-amber-700">
                                 <span className="flex items-center justify-end gap-1">
-                                  <Truck size={14} /> Van (+{ruleVanSurchargePercent}%)
+                                  <Truck size={14} /> Van ({ruleVanMultiplier.toFixed(1)}× car price)
                                 </span>
                               </th>
                             </tr>
@@ -182,7 +169,7 @@ export const Prices: React.FC = () => {
 
                       <div className="mt-4 flex items-start gap-2 text-xs text-gray-500">
                         <Truck size={14} className="shrink-0 mt-0.5 text-amber-600" />
-                        <p>Vans take up 1.5 parking spaces, so a {ruleVanSurchargePercent}% surcharge applies to the parking cost.</p>
+                        <p>Van pricing is calculated as total car price × {ruleVanMultiplier.toFixed(1)}, rounded to the nearest pound.</p>
                       </div>
 
                       <div className="mt-6">

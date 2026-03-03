@@ -525,6 +525,7 @@ export const BookingFlow: React.FC = () => {
                 cancellationPolicy={getCancellationPolicy()}
                 pricingReason={activePricing?.reason}
                 pricingPriority={activePricing?.priority}
+                vanMultiplier={activePricing?.van_multiplier}
               />
             </div>
           </div>

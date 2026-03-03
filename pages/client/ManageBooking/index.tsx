@@ -208,7 +208,11 @@ export const ManageBooking: React.FC = () => {
     const amendmentFee = getSetting<number>('capacity', 'amendment_extension_fee', 5) ?? 5;
 
     // Determine if this is a car or van booking
-    const isVan = booking?.parking_type === 'van';
+    const isVan = booking?.vehicle_type === 'van';
+
+    // Get standard pricing (priority 2) as fallback
+    const { pricingRules } = usePricingStore.getState();
+    const standardPricing = pricingRules.find(rule => rule.priority === 2 && rule.is_active);
 
     // Calculate add-ons cost (in pounds)
     let addOnsCost = 0;
@@ -221,8 +225,24 @@ export const ManageBooking: React.FC = () => {
       });
     }
 
+    // Calculate OLD booking parking cost (recalculate to ensure consistency)
+    let oldCarParkingCost = 0;
+    const oldStartDate = new Date(oldDropOff);
+    for (let i = 0; i < oldDays; i++) {
+      const currentDate = new Date(oldStartDate);
+      currentDate.setDate(currentDate.getDate() + i);
+      const pricing = getPricingForDate(currentDate) || standardPricing;
+      const dailyRate = pricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
+      oldCarParkingCost += dailyRate;
+    }
+    // Get van multiplier for old booking dates
+    const oldFirstDayPricing = getPricingForDate(oldStartDate) || standardPricing;
+    const oldVanMultiplier = oldFirstDayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
+    const oldParkingCost = isVan ? Math.round(oldCarParkingCost * oldVanMultiplier) : oldCarParkingCost;
+
     // Calculate NEW booking parking cost (following EXACT main booking flow)
-    let newParkingCost = 0;
+    let carParkingCost = 0;
+    let vanMultiplier = standardPricing?.van_multiplier ?? 0;
     const newStartDate = new Date(newDropOff);
     const dailyBreakdown: Array<{ day: number; date: string; rate: number }> = [];
     let highestPriority: number | null = null;
@@ -232,22 +252,17 @@ export const ManageBooking: React.FC = () => {
     for (let i = 0; i < newDays; i++) {
       const currentDate = new Date(newStartDate);
       currentDate.setDate(currentDate.getDate() + i);
-      const pricing = getPricingForDate(currentDate);
+      const pricing = getPricingForDate(currentDate) || standardPricing;
 
-      // Store first day's pricing for VAT rate
+      // Store first day's pricing for VAT rate and van multiplier
       if (i === 0) {
         firstDayPricing = pricing;
+        vanMultiplier = pricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
       }
 
-      // Day 1 uses base price, subsequent days use additional_day_rate (same as main booking flow)
-      let dailyRate: number;
-      if (i === 0) {
-        dailyRate = isVan ? (pricing?.base_van_price ?? 36) : (pricing?.base_car_price ?? 26);
-      } else {
-        dailyRate = isVan ? (pricing?.additional_day_rate_van ?? 18) : (pricing?.additional_day_rate ?? 13);
-      }
-
-      newParkingCost += dailyRate;
+      // Flat rate pricing: always use car rate per day
+      const dailyRate = pricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
+      carParkingCost += dailyRate;
 
       // Track priority 1 pricing
       if (pricing?.priority === 1) {
@@ -264,8 +279,11 @@ export const ManageBooking: React.FC = () => {
       });
     }
 
-    // Get VAT rate from first day's pricing rule, fallback to settings
-    const VAT_RATE = (firstDayPricing?.vat_rate ?? parsedSettings?.vatRate) ?? 0.20;
+    // Apply van multiplier to total if vehicle is a van
+    const newParkingCost = isVan ? Math.round(carParkingCost * vanMultiplier) : carParkingCost;
+
+    // Get VAT rate from first day's pricing rule, fallback to standard pricing
+    const VAT_RATE = firstDayPricing?.vat_rate ?? standardPricing?.vat_rate ?? 0;
 
     // FOLLOW EXACT MAIN BOOKING FLOW LOGIC:
     // baseCost = parkingCost + addOnsCost
@@ -275,8 +293,8 @@ export const ManageBooking: React.FC = () => {
     // NEW booking baseCost (excl VAT)
     const newBaseCost = newParkingCost + addOnsCost;
 
-    // OLD booking baseCost (excl VAT) from database
-    const oldBaseCost = (booking?.subtotal ?? 0) / 100; // Convert from pence to pounds
+    // OLD booking baseCost (excl VAT) - recalculated to ensure van multiplier is applied
+    const oldBaseCost = oldParkingCost + addOnsCost;
 
     // Calculate difference in baseCost (excl VAT)
     const baseCostDifference = newBaseCost - oldBaseCost;
@@ -304,7 +322,7 @@ export const ManageBooking: React.FC = () => {
       pricingReason: highestPriority === 1 ? pricingReason : null,
       pricingPriority: highestPriority,
       oldBookingCost: oldBaseCost, // in pounds (excl VAT)
-      oldParkingCost: oldBaseCost - addOnsCost, // in pounds (excl VAT, parking only)
+      oldParkingCost, // in pounds (excl VAT, parking only) - recalculated with van multiplier
       addOnsCost, // in pounds
       newBookingCost: newBaseCost, // in pounds (excl VAT)
       newParkingCost, // in pounds (parking only)
@@ -452,6 +470,8 @@ export const ManageBooking: React.FC = () => {
           setAmendmentDetails({
             additionalDays: pricingDetails.additionalDays,
             additionalCharge: pricingDetails.additionalCharge,
+            additionalCost: pricingDetails.additionalCost,
+            additionalVat: pricingDetails.additionalVat,
             unavailableDates: [],
             dailyBreakdown: pricingDetails.dailyBreakdown,
             amendmentFee: pricingDetails.amendmentFee,
@@ -463,6 +483,7 @@ export const ManageBooking: React.FC = () => {
             newBookingCost: pricingDetails.newBookingCost,
             newParkingCost: pricingDetails.newParkingCost,
             priceDifference: pricingDetails.priceDifference,
+            vatRate: pricingDetails.vatRate,
           });
           setIsBreakdownExpanded(false); // Reset breakdown to collapsed
           setShowAmendConfirmation(true);
