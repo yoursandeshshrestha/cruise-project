@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, type Database } from '../lib/supabase';
 
 // =============================================================================
 // Types
@@ -18,23 +18,7 @@ interface AddOn {
   updated_at: string;
 }
 
-interface PricingRule {
-  id: string;
-  name: string;
-  base_car_price: number | null; // in pence
-  base_van_price: number | null; // in pence
-  additional_day_rate: number | null; // in pence
-  additional_day_rate_van: number | null; // in pence
-  vat_rate: number; // as decimal (e.g., 0.20 for 20%)
-  start_date: string | null;
-  end_date: string | null;
-  priority: number;
-  reason: string | null;
-  is_active: boolean | null;
-  display_order: number;
-  created_at: string | null;
-  updated_at: string | null;
-}
+type PricingRule = Database['public']['Tables']['pricing_rules']['Row'];
 
 interface CapacityOverride {
   id: string;
@@ -123,10 +107,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       })
       .sort((a, b) => b.display_order - a.display_order)[0];
 
-    // Convert pence to pounds and get VAT rate
-    const dailyRate = activePricing ? (activePricing.base_car_price ?? 0) / 100 : 12.50;
-    const minimumStayCost = activePricing ? (activePricing.base_car_price ?? 0) / 100 : 45.00;
-    const vatRate = activePricing ? (activePricing.vat_rate ?? 0.20) : 0.20; // Default to 20% if no pricing rule
+    // Use flat daily rate from database
+    const dailyRate = activePricing?.price_per_day ?? 0;
+    const minimumStayCost = activePricing?.price_per_day ?? 0;
+    const vatRate = activePricing?.vat_rate ?? 0; // Default to 0% VAT
 
     return {
       dailyRate,
