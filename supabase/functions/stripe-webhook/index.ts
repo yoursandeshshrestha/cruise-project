@@ -77,8 +77,22 @@ serve(async (req) => {
 
           if (currentBooking && session.amount_total) {
             const amendmentAmount = session.amount_total; // Already in pence
-            const amendmentVat = Math.round(amendmentAmount / 1.2 * 0.2); // Extract VAT
-            const amendmentSubtotal = amendmentAmount - amendmentVat;
+
+            // Use VAT values from metadata if available (in pounds), otherwise fallback to recalculating
+            const amendmentSubtotalPounds = session.metadata?.amendment_subtotal
+              ? parseFloat(session.metadata.amendment_subtotal)
+              : NaN;
+            const amendmentVatPounds = session.metadata?.amendment_vat
+              ? parseFloat(session.metadata.amendment_vat)
+              : NaN;
+
+            // Convert to pence or calculate if not provided (check for valid numbers)
+            const amendmentSubtotal = !isNaN(amendmentSubtotalPounds) && amendmentSubtotalPounds !== null
+              ? Math.round(amendmentSubtotalPounds * 100)
+              : amendmentAmount; // Fallback: use total amount as subtotal (assumes 0% VAT)
+            const amendmentVat = !isNaN(amendmentVatPounds) && amendmentVatPounds !== null
+              ? Math.round(amendmentVatPounds * 100)
+              : 0; // Fallback: assume 0 VAT if not provided
 
             // Create amendment history entry
             const amendmentEntry = {
@@ -153,8 +167,44 @@ serve(async (req) => {
 
         // Record payment in payments table
         const paymentAmount = session.amount_total || 0;
-        const paymentVat = Math.round(paymentAmount / 1.2 * 0.2);
-        const paymentSubtotal = paymentAmount - paymentVat;
+
+        // For amendments, use the calculated values from above
+        // For new bookings, fetch from the booking record which has correct VAT
+        let paymentSubtotal = 0;
+        let paymentVat = 0;
+
+        if (isAmendment) {
+          // Use amendment values calculated above (from metadata or fallback)
+          const amendmentSubtotalPounds = session.metadata?.amendment_subtotal
+            ? parseFloat(session.metadata.amendment_subtotal)
+            : NaN;
+          const amendmentVatPounds = session.metadata?.amendment_vat
+            ? parseFloat(session.metadata.amendment_vat)
+            : NaN;
+
+          paymentSubtotal = !isNaN(amendmentSubtotalPounds) && amendmentSubtotalPounds !== null
+            ? Math.round(amendmentSubtotalPounds * 100)
+            : paymentAmount; // Fallback: use total amount as subtotal (assumes 0% VAT)
+          paymentVat = !isNaN(amendmentVatPounds) && amendmentVatPounds !== null
+            ? Math.round(amendmentVatPounds * 100)
+            : 0; // Fallback: assume 0 VAT if not provided
+        } else {
+          // For new bookings, get VAT from the booking record
+          const { data: bookingForPayment } = await supabase
+            .from('bookings')
+            .select('subtotal, vat')
+            .eq('id', bookingId)
+            .single();
+
+          if (bookingForPayment) {
+            paymentSubtotal = bookingForPayment.subtotal;
+            paymentVat = bookingForPayment.vat;
+          } else {
+            // Fallback if booking not found (shouldn't happen)
+            paymentSubtotal = Math.round(paymentAmount / 1.2 * 1.0);
+            paymentVat = paymentAmount - paymentSubtotal;
+          }
+        }
 
         const paymentRecord = {
           booking_id: bookingId,

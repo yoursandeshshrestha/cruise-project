@@ -19,6 +19,8 @@ interface CheckoutSessionRequest {
     return_datetime: string;
     vehicle_registration: string;
     vehicle_make: string;
+    amendment_subtotal?: string;
+    amendment_vat?: string;
   };
 }
 
@@ -73,6 +75,12 @@ serve(async (req) => {
       metadata.amendment_return = amendmentData.return_datetime;
       metadata.amendment_vehicle_reg = amendmentData.vehicle_registration;
       metadata.amendment_vehicle_make = amendmentData.vehicle_make;
+      if (amendmentData.amendment_subtotal) {
+        metadata.amendment_subtotal = amendmentData.amendment_subtotal;
+      }
+      if (amendmentData.amendment_vat) {
+        metadata.amendment_vat = amendmentData.amendment_vat;
+      }
     }
 
     if (booking_reference) {
