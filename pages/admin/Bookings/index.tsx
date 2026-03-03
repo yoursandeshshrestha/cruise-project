@@ -301,9 +301,11 @@ export const Bookings: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div className="font-semibold">£{(booking.total / 100).toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        VAT: £{(booking.vat / 100).toFixed(2)}
-                      </div>
+                      {booking.vat > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          VAT: £{(booking.vat / 100).toFixed(2)}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(booking.status)}>

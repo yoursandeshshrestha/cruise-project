@@ -58,10 +58,14 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({ booking }) => {
             <span className="text-sm text-muted-foreground">Subtotal</span>
             <span className="font-medium">£{(booking.subtotal / 100).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">VAT (20%)</span>
-            <span className="font-medium">£{(booking.vat / 100).toFixed(2)}</span>
-          </div>
+          {booking.vat > 0 && (
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">
+                VAT ({booking.subtotal > 0 ? ((booking.vat / booking.subtotal) * 100).toFixed(0) : '0'}%)
+              </span>
+              <span className="font-medium">£{(booking.vat / 100).toFixed(2)}</span>
+            </div>
+          )}
           {booking.discount > 0 && (
             <div className="flex justify-between text-green-600">
               <span className="text-sm">Discount</span>
@@ -149,10 +153,14 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({ booking }) => {
                         <span className="text-gray-600">Amendment Charge:</span>
                         <span className="font-medium">£{(amendment.amendment_subtotal / 100).toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">VAT:</span>
-                        <span className="font-medium">£{(amendment.amendment_vat / 100).toFixed(2)}</span>
-                      </div>
+                      {amendment.amendment_vat > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">
+                            VAT ({amendment.amendment_subtotal > 0 ? ((amendment.amendment_vat / amendment.amendment_subtotal) * 100).toFixed(0) : '0'}%):
+                          </span>
+                          <span className="font-medium">£{(amendment.amendment_vat / 100).toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-blue-700 font-semibold pt-1 border-t border-blue-200">
                         <span>Amendment Total:</span>
                         <span>£{(amendment.amendment_charge / 100).toFixed(2)}</span>

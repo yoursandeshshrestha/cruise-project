@@ -343,7 +343,11 @@ export const Payments: React.FC = () => {
                     <div className="space-y-1">
                       <div className="font-semibold">£{(payment.amount / 100).toFixed(2)}</div>
                       <div className="text-xs text-muted-foreground">
-                        Sub: £{(payment.subtotal / 100).toFixed(2)} + VAT: £{(payment.vat / 100).toFixed(2)}
+                        {payment.vat > 0 ? (
+                          <>Sub: £{(payment.subtotal / 100).toFixed(2)} + VAT: £{(payment.vat / 100).toFixed(2)}</>
+                        ) : (
+                          <>Subtotal: £{(payment.subtotal / 100).toFixed(2)}</>
+                        )}
                       </div>
                     </div>
                   </TableCell>
