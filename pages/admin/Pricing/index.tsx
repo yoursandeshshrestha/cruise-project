@@ -86,7 +86,7 @@ export const Pricing: React.FC = () => {
           <div>
             <h1 className="text-2xl font-semibold mb-2">Pricing Rules</h1>
             <p className="text-muted-foreground">
-              Manage parking rates including tiered pricing and seasonal rules
+              Manage parking rates with flat daily pricing. Van price = car price × multiplier (configurable, rounded)
             </p>
           </div>
           <Button onClick={() => handleOpenDialog()} className="cursor-pointer">

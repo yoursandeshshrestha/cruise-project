@@ -36,7 +36,7 @@ export const PricingForm: React.FC<PricingFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[750px] max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{formData.id ? 'Edit Pricing Rule' : 'Add Pricing Rule'}</DialogTitle>
           <DialogDescription>
@@ -66,6 +66,44 @@ export const PricingForm: React.FC<PricingFormProps> = ({
               )}
             </div>
 
+            {/* Flat Daily Rate */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price_per_day" className="cursor-pointer">Daily Rate (£) *</Label>
+                <Input
+                  id="price_per_day"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price_per_day}
+                  onChange={(e) => setFormData({ ...formData, price_per_day: e.target.value })}
+                  placeholder="15.00"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Flat rate per day for standard vehicles (cars)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="van_multiplier" className="cursor-pointer">Van Multiplier *</Label>
+                <Input
+                  id="van_multiplier"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="5"
+                  value={formData.van_multiplier}
+                  onChange={(e) => setFormData({ ...formData, van_multiplier: e.target.value })}
+                  placeholder="1.5"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Van price = car price × multiplier (e.g., 1.5)
+                </p>
+              </div>
+            </div>
+
             {/* VAT Rate */}
             <div className="space-y-2">
               <Label htmlFor="vat_rate" className="cursor-pointer">VAT Rate (%)</Label>
@@ -77,7 +115,7 @@ export const PricingForm: React.FC<PricingFormProps> = ({
                 max="100"
                 value={formData.vat_rate}
                 onChange={(e) => setFormData({ ...formData, vat_rate: e.target.value })}
-                placeholder="20 (or 0 for no VAT)"
+                placeholder="0 (or 20 for 20% VAT)"
                 className="max-w-xs"
               />
               <p className="text-xs text-muted-foreground">
@@ -85,70 +123,15 @@ export const PricingForm: React.FC<PricingFormProps> = ({
               </p>
             </div>
 
-            {/* Tiered Pricing Configuration */}
-            <div className="space-y-3">
-              <div className="text-sm font-medium text-gray-900">Tiered Pricing Configuration</div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="base_car_price" className="cursor-pointer">Base Car Price (1 Day) - £ *</Label>
-                  <Input
-                    id="base_car_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_car_price}
-                    onChange={(e) => setFormData({ ...formData, base_car_price: e.target.value })}
-                    placeholder="26.00"
-                    required
-                  />
+            {/* Pricing Example */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="text-sm font-medium text-gray-900 mb-2">Pricing Calculation</div>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <div>• Standard vehicles (cars): £{formData.price_per_day || '15.00'} per day</div>
+                <div>• Vans & large vehicles: Car total × {formData.van_multiplier || '1.5'} (rounded to nearest £)</div>
+                <div className="mt-2 pt-2 border-t border-slate-300">
+                  <span className="font-medium">Example:</span> 7 days = Car £{((parseFloat(formData.price_per_day || '15') * 7)).toFixed(2)} | Van £{Math.round((parseFloat(formData.price_per_day || '15') * 7) * parseFloat(formData.van_multiplier || '1.5'))}.00
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="base_van_price" className="cursor-pointer">Base Van Price (1 Day) - £ *</Label>
-                  <Input
-                    id="base_van_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.base_van_price}
-                    onChange={(e) => setFormData({ ...formData, base_van_price: e.target.value })}
-                    placeholder="36.00"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additional_day_rate" className="cursor-pointer">Car Extra Day Rate - £ *</Label>
-                  <Input
-                    id="additional_day_rate"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.additional_day_rate}
-                    onChange={(e) => setFormData({ ...formData, additional_day_rate: e.target.value })}
-                    placeholder="13.00"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additional_day_rate_van" className="cursor-pointer">Van Extra Day Rate - £ *</Label>
-                  <Input
-                    id="additional_day_rate_van"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.additional_day_rate_van}
-                    onChange={(e) => setFormData({ ...formData, additional_day_rate_van: e.target.value })}
-                    placeholder="18.00"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                Example: 7 days car = £{formData.base_car_price || '26.00'} + (6 × £{formData.additional_day_rate || '13.00'}) = £{(parseFloat(formData.base_car_price || '26') + (6 * parseFloat(formData.additional_day_rate || '13'))).toFixed(2)} | 7 days van = £{formData.base_van_price || '36.00'} + (6 × £{formData.additional_day_rate_van || '18.00'}) = £{(parseFloat(formData.base_van_price || '36') + (6 * parseFloat(formData.additional_day_rate_van || '18'))).toFixed(2)}
               </div>
             </div>
 

@@ -31,10 +31,8 @@ export const PricingTable: React.FC<PricingTableProps> = ({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Priority</TableHead>
-            <TableHead>Car Price</TableHead>
-            <TableHead>Car Extra Day</TableHead>
-            <TableHead>Van Price</TableHead>
-            <TableHead>Van Extra Day</TableHead>
+            <TableHead>Daily Rate</TableHead>
+            <TableHead>Van Multiplier</TableHead>
             <TableHead>VAT Rate</TableHead>
             <TableHead>Start Date</TableHead>
             <TableHead>End Date</TableHead>
@@ -46,7 +44,7 @@ export const PricingTable: React.FC<PricingTableProps> = ({
         <TableBody>
           {pricingRules.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                 No pricing rules found. Add your first pricing rule to get started.
               </TableCell>
             </TableRow>
@@ -70,14 +68,14 @@ export const PricingTable: React.FC<PricingTableProps> = ({
                         ? 'bg-purple-100 text-purple-700'
                         : 'bg-slate-100 text-slate-700'
                     }`}>
-                      {rule.priority || 1}
+                      {rule.priority || 2}
                     </span>
                   </TableCell>
-                  <TableCell>£{(rule.base_car_price || 0).toFixed(2)}</TableCell>
-                  <TableCell>£{(rule.additional_day_rate || 0).toFixed(2)}</TableCell>
-                  <TableCell>£{(rule.base_van_price || 0).toFixed(2)}</TableCell>
-                  <TableCell>£{(rule.additional_day_rate_van || 0).toFixed(2)}</TableCell>
-                  <TableCell>{((rule.vat_rate ?? 0.20) * 100).toFixed(0)}%</TableCell>
+                  <TableCell className="font-medium">£{(rule.price_per_day ?? 0).toFixed(2)}/day</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {(rule.van_multiplier ?? 0).toFixed(1)}× car price
+                  </TableCell>
+                  <TableCell>{((rule.vat_rate ?? 0) * 100).toFixed(0)}%</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {rule.start_date ? new Date(rule.start_date).toLocaleDateString('en-GB') : (isStandardPricing ? 'All year' : '—')}
                   </TableCell>

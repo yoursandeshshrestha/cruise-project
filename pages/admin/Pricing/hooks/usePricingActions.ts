@@ -30,21 +30,15 @@ export const usePricingActions = ({
       return 'Please enter a valid VAT rate between 0 and 100';
     }
 
-    // Validate tiered pricing fields
-    if (!formData.base_car_price || parseFloat(formData.base_car_price) < 0) {
-      return 'Please enter a valid base car price';
+    // Validate flat daily rate
+    if (!formData.price_per_day || parseFloat(formData.price_per_day) <= 0) {
+      return 'Please enter a valid daily rate greater than 0';
     }
 
-    if (!formData.base_van_price || parseFloat(formData.base_van_price) < 0) {
-      return 'Please enter a valid base van price';
-    }
-
-    if (!formData.additional_day_rate || parseFloat(formData.additional_day_rate) < 0) {
-      return 'Please enter a valid additional day rate';
-    }
-
-    if (!formData.additional_day_rate_van || parseFloat(formData.additional_day_rate_van) < 0) {
-      return 'Please enter a valid van additional day rate';
+    // Validate van multiplier
+    const vanMultiplier = parseFloat(formData.van_multiplier);
+    if (!formData.van_multiplier || isNaN(vanMultiplier) || vanMultiplier < 1 || vanMultiplier > 5) {
+      return 'Please enter a valid van multiplier between 1 and 5';
     }
 
     // Custom pricing (priority 1) requires dates
@@ -79,11 +73,9 @@ export const usePricingActions = ({
 
       const pricingData = {
         name: formData.name.trim(),
+        price_per_day: parseFloat(formData.price_per_day),
+        van_multiplier: parseFloat(formData.van_multiplier),
         vat_rate: parseFloat(formData.vat_rate) / 100,
-        base_car_price: parseFloat(formData.base_car_price),
-        base_van_price: parseFloat(formData.base_van_price),
-        additional_day_rate: parseFloat(formData.additional_day_rate),
-        additional_day_rate_van: parseFloat(formData.additional_day_rate_van),
         start_date: formData.start_date ? format(formData.start_date, 'yyyy-MM-dd') : null,
         end_date: formData.end_date ? format(formData.end_date, 'yyyy-MM-dd') : null,
         is_active: formData.is_active,
