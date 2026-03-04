@@ -34,6 +34,8 @@ interface BookingSidebarProps {
     subtotalWithVAT: number;
     finalTotal: number;
     pricingBreakdown: PricingBreakdownItem[];
+    weeklyDiscountPercent: number;
+    weeklyDiscountAmount: number;
   };
   settings: {
     dailyRate: number;
@@ -159,7 +161,7 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm font-semibold text-gray-700">
                     <span>Parking ({numberOfDays} {numberOfDays === 1 ? 'day' : 'days'})</span>
-                    <span>£{parkingCost.toFixed(2)}</span>
+                    <span>£{(parkingCost + calculations.weeklyDiscountAmount).toFixed(2)}</span>
                   </div>
                   {pricingBreakdown.map((item, index) => (
                     <div key={index} className="pl-3">
@@ -193,7 +195,15 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
               ) : (
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Parking ({numberOfDays} {numberOfDays === 1 ? 'day' : 'days'})</span>
-                  <span>£{parkingCost.toFixed(2)}</span>
+                  <span>£{(parkingCost + calculations.weeklyDiscountAmount).toFixed(2)}</span>
+                </div>
+              )}
+              {calculations.weeklyDiscountAmount > 0 && (
+                <div className="flex justify-between text-sm text-green-600 items-center">
+                  <span className="flex items-center gap-1">
+                    Weekly Discount ({calculations.weeklyDiscountPercent}%)
+                  </span>
+                  <span>-£{calculations.weeklyDiscountAmount.toFixed(2)}</span>
                 </div>
               )}
               {isMinimumApplied && (

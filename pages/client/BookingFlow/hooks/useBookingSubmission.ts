@@ -80,6 +80,7 @@ export const useBookingSubmission = ({
       // Calculate cost for each individual day using flat rate pricing
       let carParkingCost = 0;
       let vanMultiplier = standardPricing?.van_multiplier ?? 0;
+      const pricingRuleDayCounts = new Map<string, { rule: typeof standardPricing; days: number }>();
 
       for (let i = 0; i < diffDays; i++) {
         const currentDate = new Date(start);
@@ -94,6 +95,15 @@ export const useBookingSubmission = ({
           vanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
         }
 
+        // Track how many days each pricing rule covers
+        const ruleId = dayPricing?.id || 'default';
+        const existing = pricingRuleDayCounts.get(ruleId);
+        if (existing) {
+          existing.days += 1;
+        } else {
+          pricingRuleDayCounts.set(ruleId, { rule: dayPricing, days: 1 });
+        }
+
         // Flat rate pricing: always use car rate per day
         const dailyRate = dayPricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
         carParkingCost += dailyRate;
@@ -101,6 +111,37 @@ export const useBookingSubmission = ({
 
       // Apply van multiplier to total if vehicle is a van
       parkingCost = isVan ? Math.round(carParkingCost * vanMultiplier) : carParkingCost;
+
+      // Find the dominant pricing rule (the one covering the most days)
+      let dominantPricingRule = firstDayPricing;
+      let maxDays = 0;
+
+      pricingRuleDayCounts.forEach((value) => {
+        if (value.days > maxDays) {
+          maxDays = value.days;
+          dominantPricingRule = value.rule;
+        }
+      });
+
+      // Calculate weekly block package discount using dominant pricing rule
+      let weeklyDiscountPercent = 0;
+      let weeklyDiscountAmount = 0;
+
+      if (dominantPricingRule && diffDays >= 7) {
+        if (diffDays >= 28) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_4wk ?? 0;
+        } else if (diffDays >= 21) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_3wk ?? 0;
+        } else if (diffDays >= 14) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_2wk ?? 0;
+        } else if (diffDays >= 7) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_1wk ?? 0;
+        }
+      }
+
+      // Apply weekly discount to parking cost (before VAT)
+      weeklyDiscountAmount = (parkingCost * weeklyDiscountPercent) / 100;
+      parkingCost = parkingCost - weeklyDiscountAmount;
 
       // Use VAT rate from first day's pricing rule, fallback to settings, then default to 0.00
       const vatRate = (firstDayPricing?.vat_rate ?? parsedSettings?.vatRate) ?? 0.00;
@@ -119,6 +160,7 @@ export const useBookingSubmission = ({
       const vatInPence = Math.round(vat * 100);
       const totalInPence = Math.round(booking.totalPrice * 100);
       const discountInPence = Math.round(promoDiscount * 100);
+      const weeklyDiscountAmountInPence = Math.round(weeklyDiscountAmount * 100);
 
       const bookingData = {
         booking_reference: reference,
@@ -142,6 +184,14 @@ export const useBookingSubmission = ({
         total: totalInPence,
         discount: discountInPence,
         promo_code: appliedPromoCode || null,
+        weekly_discount_percent: weeklyDiscountPercent,
+        weekly_discount_amount: weeklyDiscountAmountInPence,
+        // Store original booking values (immutable after creation)
+        original_subtotal: subtotalInPence,
+        original_vat: vatInPence,
+        original_total: totalInPence,
+        original_drop_off_datetime: dropOffDateTime,
+        original_return_datetime: returnDateTime,
         stripe_payment_intent_id: null,
         stripe_charge_id: null,
         stripe_checkout_session_id: null,
@@ -183,8 +233,7 @@ export const useBookingSubmission = ({
         booking_id: createdBooking.id,
       });
 
-      // Step 4: Redirect to Stripe Checkout immediately
-      console.log('Redirecting to Stripe Checkout:', checkoutSession.url);
+      
       window.location.href = checkoutSession.url;
       // Don't set isProcessing to false - keep the overlay until redirect completes
       return true;

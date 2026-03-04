@@ -31,6 +31,7 @@ import { CustomerDetailsStep } from './components/CustomerDetailsStep';
 import { PaymentStep } from './components/PaymentStep';
 import { ConfirmationStep } from './components/ConfirmationStep';
 import { Modal } from '../../../components/client/Modal';
+import { WeeklyDiscountInfo } from './components/WeeklyDiscountInfo';
 
 const INITIAL_STATE: BookingState = {
   dropOffDate: '',
@@ -455,6 +456,11 @@ export const BookingFlow: React.FC = () => {
           <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Form Area */}
             <div className="lg:col-span-2">
+              {/* Weekly Discount Information */}
+              <WeeklyDiscountInfo
+                dropOffDate={booking.dropOffDate}
+                returnDate={booking.returnDate}
+              />
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-light">
                 {step === 1 && (
                   <TripDetailsStep

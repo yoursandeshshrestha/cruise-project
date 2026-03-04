@@ -37,6 +37,8 @@ interface CalculationResult {
   subtotalWithVAT: number;
   finalTotal: number;
   pricingBreakdown: PricingBreakdownItem[];
+  weeklyDiscountPercent: number;
+  weeklyDiscountAmount: number;
 }
 
 export const useBookingCalculations = (
@@ -64,6 +66,8 @@ export const useBookingCalculations = (
     let parkingCost = 0;
     const pricingBreakdown: PricingBreakdownItem[] = [];
     let firstDayPricing = null;
+    let weeklyDiscountPercent = 0;
+    let weeklyDiscountAmount = 0;
 
     if (booking.dropOffDate && booking.returnDate) {
       const start = new Date(booking.dropOffDate);
@@ -83,6 +87,7 @@ export const useBookingCalculations = (
       // Calculate cost for each individual day using flat rate pricing
       let carParkingCost = 0;
       let vanMultiplier = standardPricing?.van_multiplier ?? 0;
+      const pricingRuleDayCounts = new Map<string, { rule: typeof standardPricing; days: number }>();
 
       for (let i = 0; i < numberOfDays; i++) {
         const currentDate = new Date(start);
@@ -95,6 +100,15 @@ export const useBookingCalculations = (
         if (i === 0) {
           firstDayPricing = dayPricing;
           vanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
+        }
+
+        // Track how many days each pricing rule covers
+        const ruleId = dayPricing?.id || 'default';
+        const existing = pricingRuleDayCounts.get(ruleId);
+        if (existing) {
+          existing.days += 1;
+        } else {
+          pricingRuleDayCounts.set(ruleId, { rule: dayPricing, days: 1 });
         }
 
         // Flat rate pricing: always use car rate per day
@@ -112,6 +126,34 @@ export const useBookingCalculations = (
 
       // Apply van multiplier to total if vehicle is a van
       parkingCost = isVan ? Math.round(carParkingCost * vanMultiplier) : carParkingCost;
+
+      // Find the dominant pricing rule (the one covering the most days)
+      let dominantPricingRule = firstDayPricing;
+      let maxDays = 0;
+
+      pricingRuleDayCounts.forEach((value) => {
+        if (value.days > maxDays) {
+          maxDays = value.days;
+          dominantPricingRule = value.rule;
+        }
+      });
+
+      // Calculate weekly block package discount using dominant pricing rule
+      if (dominantPricingRule && numberOfDays >= 7) {
+        if (numberOfDays >= 28) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_4wk ?? 0;
+        } else if (numberOfDays >= 21) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_3wk ?? 0;
+        } else if (numberOfDays >= 14) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_2wk ?? 0;
+        } else if (numberOfDays >= 7) {
+          weeklyDiscountPercent = dominantPricingRule.weekly_discount_1wk ?? 0;
+        }
+      }
+
+      // Apply weekly discount to parking cost
+      weeklyDiscountAmount = (parkingCost * weeklyDiscountPercent) / 100;
+      parkingCost = parkingCost - weeklyDiscountAmount;
 
       // Group consecutive days with the same pricing rule for display
       interface PricingGroup {
@@ -199,6 +241,8 @@ export const useBookingCalculations = (
       subtotalWithVAT,
       finalTotal,
       pricingBreakdown,
+      weeklyDiscountPercent,
+      weeklyDiscountAmount,
     };
   }, [booking.dropOffDate, booking.returnDate, booking.selectedAddOns, booking.vehicleType, settings, addOns, promoDiscount, getPricingForDate]);
 };
