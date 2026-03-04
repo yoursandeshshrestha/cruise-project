@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock, Tag, ChevronDown, ChevronUp } from 'lucide-react';
 import { BookingState } from '../../../../types';
 import { PricingNotice } from './PricingNotice';
+import { formatDate } from '../../../../lib/dateUtils';
 
 interface AddOn {
   slug: string;
@@ -107,13 +108,13 @@ export const BookingSidebar: React.FC<BookingSidebarProps> = ({
         {booking.dropOffDate && (
           <div>
             <p className="text-gray-500 text-xs">Drop Off</p>
-            <p className="font-semibold">{booking.dropOffDate} at {booking.dropOffTime}</p>
+            <p className="font-semibold">{formatDate(booking.dropOffDate)} at {booking.dropOffTime}</p>
           </div>
         )}
         {booking.returnDate && (
           <div>
             <p className="text-gray-500 text-xs">Return</p>
-            <p className="font-semibold">{booking.returnDate} at {booking.returnTime}</p>
+            <p className="font-semibold">{formatDate(booking.returnDate)} at {booking.returnTime}</p>
           </div>
         )}
         {booking.shipName && (

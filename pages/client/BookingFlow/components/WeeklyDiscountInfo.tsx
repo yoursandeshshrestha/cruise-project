@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Tag, Percent, Calendar, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { format } from 'date-fns';
 import { usePricingStore } from '../../../../stores/pricingStore';
 
 interface WeeklyDiscountTier {
@@ -61,7 +62,7 @@ export const WeeklyDiscountInfo: React.FC<WeeklyDiscountInfoProps> = ({
           if (rule.start_date && rule.end_date) {
             const startDate = new Date(rule.start_date);
             const endDate = new Date(rule.end_date);
-            dateRange = `${startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+            dateRange = `${format(startDate, 'dd-MMM')} - ${format(endDate, 'dd-MMM-yyyy')}`;
           }
 
           discountsByRule.push({

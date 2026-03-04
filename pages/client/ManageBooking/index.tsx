@@ -13,6 +13,7 @@ import { usePricingStore } from '../../../stores/pricingStore';
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../lib/supabase';
 import { differenceInDays, differenceInCalendarDays, format, startOfDay, eachDayOfInterval } from 'date-fns';
+import { formatDate, formatDateLong, formatDateTime, formatDateShort } from '../../../lib/dateUtils';
 import { PricingNotice } from '../BookingFlow/components/PricingNotice';
 import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE } from '../../../constants';
 
@@ -639,7 +640,7 @@ export const ManageBooking: React.FC = () => {
             // Booking Details
             doc.setFontSize(10);
             doc.text(`Reference: ${booking.booking_reference}`, 20, 55);
-            doc.text(`Date Issued: ${new Date().toLocaleDateString()}`, 20, 60);
+            doc.text(`Date Issued: ${formatDate(new Date())}`, 20, 60);
             doc.text(`Status: ${booking.status}`, 20, 65);
 
             // Customer
@@ -663,10 +664,10 @@ export const ManageBooking: React.FC = () => {
             doc.setFont(undefined, 'normal');
             doc.setFontSize(10);
             doc.text(`Drop Off:`, 20, 125);
-            doc.text(`${new Date(booking.drop_off_datetime).toLocaleDateString()} at ${new Date(booking.drop_off_datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`, 50, 125);
+            doc.text(`${formatDateTime(booking.drop_off_datetime)}`, 50, 125);
 
             doc.text(`Return:`, 20, 131);
-            doc.text(`${new Date(booking.return_datetime).toLocaleDateString()} at ${new Date(booking.return_datetime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`, 50, 131);
+            doc.text(`${formatDateTime(booking.return_datetime)}`, 50, 131);
 
             doc.text(`Ship:`, 20, 137);
             doc.text(`${booking.ship_name}`, 50, 137);
@@ -757,13 +758,9 @@ export const ManageBooking: React.FC = () => {
   if (status === 'dashboard' && booking) {
     const isCancelled = booking.status === 'cancelled';
 
-    // Helper to format datetime
-    const formatDate = (dateTimeStr: string) => {
-      return new Date(dateTimeStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    };
-
+    // Helper to format time
     const formatTime = (dateTimeStr: string) => {
-      return new Date(dateTimeStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return format(new Date(dateTimeStr), 'HH:mm');
     };
 
     // Calculate total in pounds
@@ -947,7 +944,7 @@ export const ManageBooking: React.FC = () => {
                                             <div className="w-2 h-2 bg-primary rounded-full"></div>
                                         </div>
                                         <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Drop Off</p>
-                                        <p className="text-lg font-bold text-brand-dark">{formatDate(booking.drop_off_datetime)}</p>
+                                        <p className="text-lg font-bold text-brand-dark">{formatDateLong(booking.drop_off_datetime)}</p>
                                         <p className="text-gray-600 mb-2">Approx {formatTime(booking.drop_off_datetime)}</p>
                                         <div className="bg-gray-50 p-3 rounded text-sm text-gray-600 flex items-start gap-2">
                                             <MapPin size={16} className="text-gray-400 mt-0.5 shrink-0" />
@@ -964,7 +961,7 @@ export const ManageBooking: React.FC = () => {
                                             <div className="w-2 h-2 bg-primary rounded-full"></div>
                                         </div>
                                         <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Return</p>
-                                        <p className="text-lg font-bold text-brand-dark">{formatDate(booking.return_datetime)}</p>
+                                        <p className="text-lg font-bold text-brand-dark">{formatDateLong(booking.return_datetime)}</p>
                                         <p className="text-gray-600 mb-2">Approx {formatTime(booking.return_datetime)}</p>
                                         <div className="bg-gray-50 p-3 rounded text-sm text-gray-600 flex items-start gap-2">
                                             <Ship size={16} className="text-gray-400 mt-0.5 shrink-0" />
@@ -1472,7 +1469,7 @@ export const ManageBooking: React.FC = () => {
                                               <tr key={prev.id} className="hover:bg-gray-50">
                                                   <td className="p-4 font-medium text-brand-dark">{prev.booking_reference}</td>
                                                   <td className="p-4 text-gray-600">
-                                                    {new Date(prev.drop_off_datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} - {new Date(prev.return_datetime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    {formatDateShort(prev.drop_off_datetime)} - {formatDateShort(prev.return_datetime)}
                                                   </td>
                                                   <td className="p-4 text-gray-600">{prev.ship_name}</td>
                                                   <td className="p-4 font-bold text-gray-800">£{(prev.total / 100).toFixed(2)}</td>

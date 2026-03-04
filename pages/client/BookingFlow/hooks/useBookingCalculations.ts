@@ -1,4 +1,5 @@
 import { useMemo, useEffect } from 'react';
+import { format } from 'date-fns';
 import { BookingState } from '../../../../types';
 import { calculateParkingPrice, ADDITIONAL_DAY_RATE } from '../../../../constants';
 import { usePricingStore } from '../../../../stores/pricingStore';
@@ -174,7 +175,7 @@ export const useBookingCalculations = (
           currentGroup.total += day.rate;
           currentGroup.dailyRates.push({
             day: day.dayNumber,
-            date: day.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+            date: format(day.date, 'dd-MMM'),
             rate: day.rate,
           });
         } else {
@@ -189,7 +190,7 @@ export const useBookingCalculations = (
             ruleId: day.ruleId,
             dailyRates: [{
               day: day.dayNumber,
-              date: day.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+              date: format(day.date, 'dd-MMM'),
               rate: day.rate,
             }],
           };

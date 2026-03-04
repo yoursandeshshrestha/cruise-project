@@ -7,6 +7,7 @@ import { useAddOnsStore } from '../../../stores/addOnsStore';
 import { useBookingCartStore } from '../../../stores/bookingCartStore';
 import { usePricingStore } from '../../../stores/pricingStore';
 import { WeeklyDiscountInfo } from '../BookingFlow/components/WeeklyDiscountInfo';
+import { formatDateShort } from '../../../lib/dateUtils';
 
 export const Prices: React.FC = () => {
   const navigate = useNavigate();
@@ -139,7 +140,7 @@ export const Prices: React.FC = () => {
                         </h2>
                         {!isStandardPricing && pricingRule.start_date && pricingRule.end_date && (
                           <p className="text-sm text-purple-700 font-medium">
-                            Valid: {new Date(pricingRule.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} - {new Date(pricingRule.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            Valid: {formatDateShort(pricingRule.start_date)} - {formatDateShort(pricingRule.end_date)}
                           </p>
                         )}
                         {isStandardPricing && (

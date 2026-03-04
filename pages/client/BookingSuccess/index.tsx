@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Layout } from '../../../components/client/Layout';
 import { Button } from '../../../components/client/Button';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
+import { formatDateTime } from '../../../lib/dateUtils';
 import { useBookingsStore } from '../../../stores/bookingsStore';
 
 export function BookingSuccess() {
@@ -43,14 +44,7 @@ export function BookingSuccess() {
   }, [bookingRef, fetchBookingByReference]);
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(dateString);
   };
 
   const formatPrice = (pence: number): string => {

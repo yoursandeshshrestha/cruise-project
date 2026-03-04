@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { Button } from '../../../../components/client/Button';
 import { BookingState } from '../../../../types';
+import { formatDate } from '../../../../lib/dateUtils';
 
 interface ConfirmationStepProps {
   booking: BookingState;
@@ -32,11 +33,11 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="text-gray-500">Drop Off:</div>
             <div className="font-semibold text-right">
-              {booking.dropOffDate} at {booking.dropOffTime}
+              {formatDate(booking.dropOffDate)} at {booking.dropOffTime}
             </div>
             <div className="text-gray-500">Return:</div>
             <div className="font-semibold text-right">
-              {booking.returnDate} at {booking.returnTime}
+              {formatDate(booking.returnDate)} at {booking.returnTime}
             </div>
             <div className="text-gray-500">Ship:</div>
             <div className="font-semibold text-right">{booking.shipName}</div>
