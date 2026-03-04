@@ -50,11 +50,76 @@ export const ManageBooking: React.FC = () => {
     }
   }, [searchParams, setSearchParams]);
 
+  // Load booking from URL params on mount (only run once)
+  const hasLoadedFromUrl = React.useRef(false);
+  React.useEffect(() => {
+    if (hasLoadedFromUrl.current) return;
+
+    const refFromUrl = searchParams.get('ref') || searchParams.get('reference');
+    const emailFromUrl = searchParams.get('email');
+
+    if (refFromUrl) {
+      hasLoadedFromUrl.current = true;
+      setReference(refFromUrl);
+
+      if (emailFromUrl) {
+        setEmail(emailFromUrl);
+        // Auto-load booking
+        setStatus('loading');
+        fetchBookingByReference(refFromUrl.toUpperCase().trim())
+          .then((foundBooking) => {
+            if (!foundBooking) {
+              setStatus('error');
+              setErrorMessage('Booking not found. Please check your reference number.');
+              return;
+            }
+
+            // Verify email matches
+            if (foundBooking.email.toLowerCase() !== emailFromUrl.toLowerCase().trim()) {
+              setStatus('error');
+              setErrorMessage('Email address does not match this booking.');
+              return;
+            }
+
+            // Set the booking
+            setBooking(foundBooking as any);
+
+            // Fetch all previous bookings for this email
+            fetchBookingsByEmail(emailFromUrl.toLowerCase().trim()).then((allBookings) => {
+              const previous = allBookings.filter(b =>
+                b.id !== foundBooking.id &&
+                (b.status === 'completed' || b.status === 'cancelled')
+              );
+              setPreviousBookings(previous as any);
+            });
+
+            setStatus('dashboard');
+          })
+          .catch((error) => {
+            console.error('Error auto-loading booking:', error);
+            setStatus('error');
+            setErrorMessage('An error occurred while loading your booking.');
+          });
+      }
+    }
+  }, [searchParams, fetchBookingByReference, fetchBookingsByEmail]);
+
   // Fetch add-ons and pricing on mount
   React.useEffect(() => {
     fetchAddOns();
     fetchPricingRules();
   }, [fetchAddOns, fetchPricingRules]);
+
+  // Update URL when viewing a booking (for persistence on refresh)
+  React.useEffect(() => {
+    if (status === 'dashboard' && booking) {
+      const params: Record<string, string> = {
+        ref: booking.booking_reference,
+        email: booking.email,
+      };
+      setSearchParams(params, { replace: true });
+    }
+  }, [status, booking]);
 
   // Helper function to convert ISO string to datetime-local format
   const isoToDatetimeLocal = (isoString: string): string => {
@@ -794,7 +859,8 @@ export const ManageBooking: React.FC = () => {
   if (status === 'dashboard' && booking) {
     const isCancelled = booking.status === 'cancelled';
     const isCheckedIn = booking.status === 'checked_in' || booking.status === 'completed';
-    const canCancel = !isCancelled && !isCheckedIn;
+    const hasAmendments = booking.amendment_history && Array.isArray(booking.amendment_history) && booking.amendment_history.length > 0;
+    const canCancel = !isCancelled && !isCheckedIn && !hasAmendments;
 
     // Helper to format time
     const formatTime = (dateTimeStr: string) => {
@@ -1099,7 +1165,8 @@ export const ManageBooking: React.FC = () => {
                                           // Calculate original parking cost breakdown
                                           let origCarParkingTotal = 0;
                                           let origFirstDayPricing = null;
-                                          let origVanMultiplier = standardPricing?.van_multiplier ?? 0;
+                                          let origVanMultiplier = standardPricing?.van_multiplier ?? 1.5;
+                                          let origVatRate = standardPricing?.vat_rate ?? 0;
                                           const origDailyBreakdown: DailyBreakdown[] = [];
 
                                           for (let i = 0; i < origParkingDays; i++) {
@@ -1109,7 +1176,8 @@ export const ManageBooking: React.FC = () => {
 
                                             if (i === 0) {
                                               origFirstDayPricing = dayPricing;
-                                              origVanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
+                                              origVanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 1.5;
+                                              origVatRate = dayPricing?.vat_rate ?? standardPricing?.vat_rate ?? 0;
                                             }
 
                                             const dailyRate = dayPricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
@@ -1238,7 +1306,7 @@ export const ManageBooking: React.FC = () => {
                                               </div>
 
                                               {/* Original Van Surcharge */}
-                                              {isVan && origVanMultiplier > 0 && (
+                                              {isVan && origVanMultiplier > 1 && (
                                                 <div className="flex justify-between text-sm text-blue-700 items-center">
                                                   <span>Van Surcharge ({origVanMultiplier}×)</span>
                                                   <span>£{(Math.round(origCarParkingTotal * origVanMultiplier) - origCarParkingTotal).toFixed(2)}</span>
@@ -1246,7 +1314,7 @@ export const ManageBooking: React.FC = () => {
                                               )}
 
                                               {/* Original Weekly Discount */}
-                                              {booking.weekly_discount_amount && booking.weekly_discount_amount > 0 && (
+                                              {(booking.weekly_discount_amount ?? 0) > 0 && (
                                                 <>
                                                   <div className="flex justify-between text-sm text-green-600 items-center">
                                                     <span>Weekly Discount ({booking.weekly_discount_percent}%)</span>
@@ -1274,9 +1342,9 @@ export const ManageBooking: React.FC = () => {
                                               </div>
 
                                               {/* Original VAT */}
-                                              {((booking.original_vat || booking.vat) / 100) > 0 && (
+                                              {origVatRate > 0 && ((booking.original_vat || booking.vat) / 100) > 0 && (
                                                 <div className="flex justify-between">
-                                                  <span className="text-gray-600">VAT</span>
+                                                  <span className="text-gray-600">VAT ({(origVatRate * 100).toFixed(0)}%)</span>
                                                   <span className="font-medium">£{((booking.original_vat || booking.vat) / 100).toFixed(2)}</span>
                                                 </div>
                                               )}
@@ -1448,7 +1516,7 @@ export const ManageBooking: React.FC = () => {
                                               {/* Amendment VAT */}
                                               {amendmentVat > 0 && (
                                                 <div className="flex justify-between text-sm">
-                                                  <span className="text-gray-600">VAT</span>
+                                                  <span className="text-gray-600">VAT {amendment.vat_rate ? `(${(amendment.vat_rate * 100).toFixed(0)}%)` : ''}</span>
                                                   <span className="font-medium">£{(amendmentVat / 100).toFixed(2)}</span>
                                                 </div>
                                               )}

@@ -148,7 +148,7 @@ export function BookingSuccess() {
                   Return to Home
                 </Button>
               </Link>
-              <Link to={`/manage-booking?ref=${booking.booking_reference as string}`} onClick={() => window.scrollTo(0, 0)}>
+              <Link to={`/manage-booking?ref=${booking.booking_reference as string}&email=${encodeURIComponent(booking.email as string)}`} onClick={() => window.scrollTo(0, 0)}>
                 <Button variant="secondary" className="py-2 px-4 text-sm">
                   View Booking
                 </Button>
