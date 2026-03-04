@@ -292,7 +292,7 @@ export const PaymentCard: React.FC<PaymentCardProps> = ({ booking }) => {
                 )}
 
                 {/* Weekly discount */}
-                {booking.weekly_discount_amount && booking.weekly_discount_amount > 0 && (
+                {(booking.weekly_discount_amount ?? 0) > 0 && (
                   <>
                     <div className="flex justify-between text-sm text-green-600 items-center">
                       <span className="flex items-center gap-1">

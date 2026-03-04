@@ -3,12 +3,10 @@ export const formatDiscount = (type: string, value: number): string => {
   return type === 'percentage' ? `${value}%` : `£${(value / 100).toFixed(2)}`;
 };
 
+import { formatDateShort as formatDateUtil } from '../../../lib/dateUtils';
+
 export const formatDate = (dateStr: string): string => {
-  return new Date(dateStr).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatDateUtil(dateStr);
 };
 
 export const isExpired = (validUntil: string): boolean => {

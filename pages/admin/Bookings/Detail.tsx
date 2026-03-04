@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
+import { formatDateShort } from '../../../lib/dateUtils';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { useBookingsStore } from '../../../stores/bookingsStore';
 import { useCruiseLinesStore } from '../../../stores/cruiseLinesStore';
@@ -112,7 +113,7 @@ export const BookingDetail: React.FC = () => {
             <div>
               <h1 className="text-2xl font-semibold">{booking.booking_reference}</h1>
               <p className="text-sm text-muted-foreground">
-                Created on {format(new Date(booking.created_at), 'MMM dd, yyyy')}
+                Created on {formatDateShort(booking.created_at)}
               </p>
             </div>
           </div>
@@ -132,7 +133,7 @@ export const BookingDetail: React.FC = () => {
                 <span className="font-semibold text-red-900">£{(booking.refund_amount / 100).toFixed(2)}</span>
                 {booking.refund_processed_at && (
                   <span className="text-sm text-red-800 ml-2">
-                    (Processed on {format(new Date(booking.refund_processed_at), 'MMM dd, yyyy')})
+                    (Processed on {formatDateShort(booking.refund_processed_at)})
                   </span>
                 )}
               </div>

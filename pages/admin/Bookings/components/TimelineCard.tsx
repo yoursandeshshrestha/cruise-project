@@ -1,5 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { formatDateTime } from '../../../../lib/dateUtils';
 
 interface Booking {
   created_at: string;
@@ -20,30 +21,30 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({ booking }) => {
       <div className="space-y-3 text-sm">
         <div>
           <label className="text-muted-foreground">Created</label>
-          <p className="font-medium">{format(new Date(booking.created_at), 'MMM dd, yyyy HH:mm')}</p>
+          <p className="font-medium">{formatDateTime(booking.created_at)}</p>
         </div>
         {booking.confirmed_at && (
           <div>
             <label className="text-muted-foreground">Confirmed</label>
-            <p className="font-medium">{format(new Date(booking.confirmed_at), 'MMM dd, yyyy HH:mm')}</p>
+            <p className="font-medium">{formatDateTime(booking.confirmed_at)}</p>
           </div>
         )}
         {booking.checked_in_at && (
           <div>
             <label className="text-muted-foreground">Checked In</label>
-            <p className="font-medium">{format(new Date(booking.checked_in_at), 'MMM dd, yyyy HH:mm')}</p>
+            <p className="font-medium">{formatDateTime(booking.checked_in_at)}</p>
           </div>
         )}
         {booking.completed_at && (
           <div>
             <label className="text-muted-foreground">Completed</label>
-            <p className="font-medium">{format(new Date(booking.completed_at), 'MMM dd, yyyy HH:mm')}</p>
+            <p className="font-medium">{formatDateTime(booking.completed_at)}</p>
           </div>
         )}
         {booking.cancelled_at && (
           <div>
             <label className="text-muted-foreground">Cancelled</label>
-            <p className="font-medium">{format(new Date(booking.cancelled_at), 'MMM dd, yyyy HH:mm')}</p>
+            <p className="font-medium">{formatDateTime(booking.cancelled_at)}</p>
           </div>
         )}
       </div>

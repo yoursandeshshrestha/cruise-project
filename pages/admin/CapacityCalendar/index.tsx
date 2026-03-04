@@ -21,6 +21,7 @@ import { useDailyCapacitiesStore } from '../../../stores/dailyCapacitiesStore';
 import { useSystemSettingsStore } from '../../../stores/systemSettingsStore';
 import { supabase } from '../../../lib/supabase';
 import { toast } from 'sonner';
+import { formatDateShort, formatDateLong } from '../../../lib/dateUtils';
 
 interface BookingData {
   drop_off_datetime: string;
@@ -134,7 +135,7 @@ export const CapacityCalendar: React.FC = () => {
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       await setCapacityForDate(dateStr, capacity, notesInput);
-      toast.success(`Capacity set to ${capacity} for ${format(selectedDate, 'MMM dd, yyyy')}`);
+      toast.success(`Capacity set to ${capacity} for ${formatDateShort(selectedDate)}`);
       setIsModalOpen(false);
     } catch (error) {
       toast.error('Failed to save capacity');
@@ -158,7 +159,7 @@ export const CapacityCalendar: React.FC = () => {
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       await deleteCapacityForDate(dateStr);
-      toast.success(`Reset to default capacity (${defaultCapacity}) for ${format(selectedDate, 'MMM dd, yyyy')}`);
+      toast.success(`Reset to default capacity (${defaultCapacity}) for ${formatDateShort(selectedDate)}`);
       setIsModalOpen(false);
     } catch (error) {
       toast.error('Failed to reset capacity');
@@ -363,7 +364,7 @@ export const CapacityCalendar: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
               <div className="flex items-center justify-between p-4 border-b">
                 <h3 className="text-lg font-semibold">
-                  Set Capacity for {format(selectedDate, 'MMMM dd, yyyy')}
+                  Set Capacity for {formatDateLong(selectedDate)}
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}

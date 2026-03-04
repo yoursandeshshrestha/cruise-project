@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { formatDateTimeFull } from '../../../lib/dateUtils';
 
 export const getStatusColor = (status: string): string => {
   switch (status) {
@@ -19,7 +19,7 @@ export const getStatusColor = (status: string): string => {
 
 export const formatDateTime = (dateString: string): string => {
   try {
-    return format(new Date(dateString), 'EEEE, MMMM dd, yyyy - HH:mm');
+    return formatDateTimeFull(dateString);
   } catch {
     return dateString;
   }

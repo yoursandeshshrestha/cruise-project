@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { supabase } from '../../../lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateLong } from '../../../lib/dateUtils';
 
 export const Account: React.FC = () => {
   const { adminUser, user, signOut } = useAuthStore();
@@ -98,7 +99,7 @@ export const Account: React.FC = () => {
                 <p className="text-sm font-medium">Account Created</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {user?.created_at
-                    ? format(new Date(user.created_at), 'MMMM dd, yyyy')
+                    ? formatDateLong(user.created_at)
                     : 'Not available'}
                 </p>
               </div>
@@ -110,7 +111,7 @@ export const Account: React.FC = () => {
                 <p className="text-sm font-medium">Last Login</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {adminUser?.last_login
-                    ? format(new Date(adminUser.last_login), 'MMMM dd, yyyy h:mm a')
+                    ? format(new Date(adminUser.last_login), 'dd MMMM yyyy h:mm a')
                     : 'Not available'}
                 </p>
               </div>

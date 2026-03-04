@@ -33,6 +33,7 @@ import { supabase } from '../../../lib/supabase';
 import { format } from 'date-fns';
 import { Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateShort } from '../../../lib/dateUtils';
 
 interface AdminUser {
   id: string;
@@ -254,11 +255,11 @@ export const AdminUsers: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {user.last_login
-                        ? format(new Date(user.last_login), 'MMM dd, yyyy h:mm a')
+                        ? format(new Date(user.last_login), 'dd-MMM-yyyy h:mm a')
                         : 'Never'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {format(new Date(user.created_at), 'MMM dd, yyyy')}
+                      {formatDateShort(user.created_at)}
                     </TableCell>
                   </TableRow>
                 ))

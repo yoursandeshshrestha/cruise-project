@@ -10,6 +10,7 @@ import {
 import { Button } from '../../../../components/admin/ui/button';
 import { Switch } from '../../../../components/admin/ui/switch';
 import { PricingRule } from '../types';
+import { formatDate } from '../../../../lib/dateUtils';
 
 interface PricingTableProps {
   pricingRules: PricingRule[];
@@ -77,10 +78,10 @@ export const PricingTable: React.FC<PricingTableProps> = ({
                   </TableCell>
                   <TableCell>{((rule.vat_rate ?? 0) * 100).toFixed(0)}%</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {rule.start_date ? new Date(rule.start_date).toLocaleDateString('en-GB') : (isStandardPricing ? 'All year' : '—')}
+                    {rule.start_date ? formatDate(rule.start_date) : (isStandardPricing ? 'All year' : '—')}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {rule.end_date ? new Date(rule.end_date).toLocaleDateString('en-GB') : (isStandardPricing ? 'All year' : '—')}
+                    {rule.end_date ? formatDate(rule.end_date) : (isStandardPricing ? 'All year' : '—')}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                     {rule.reason ? (

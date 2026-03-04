@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { useContactStore } from '../../../stores/contactStore';
+import { formatDateShort, formatDateTime } from '../../../lib/dateUtils';
 import {
   Table,
   TableBody,
@@ -191,11 +192,7 @@ export const ContactSubmissions: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar size={14} className="text-muted-foreground" />
-                        {new Date(submission.created_at).toLocaleDateString('en-GB', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDateShort(submission.created_at)}
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{submission.name}</TableCell>
@@ -313,11 +310,11 @@ export const ContactSubmissions: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-300">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Submitted</Label>
-                      <p className="text-xs">{new Date(selectedSubmission.created_at).toLocaleString('en-GB')}</p>
+                      <p className="text-xs">{formatDateTime(selectedSubmission.created_at)}</p>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Last Updated</Label>
-                      <p className="text-xs">{new Date(selectedSubmission.updated_at).toLocaleString('en-GB')}</p>
+                      <p className="text-xs">{formatDateTime(selectedSubmission.updated_at)}</p>
                     </div>
                   </div>
                 </div>

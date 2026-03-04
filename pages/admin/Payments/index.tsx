@@ -5,6 +5,7 @@ import { KPICard } from '../../../components/admin/KPICard';
 import { supabase, type Payment } from '../../../lib/supabase';
 import { Search, Download, X, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDateTime } from '../../../lib/dateUtils';
 import {
   Table,
   TableBody,
@@ -149,9 +150,9 @@ export const Payments: React.FC = () => {
       : <Badge className="bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-100">Amendment</Badge>;
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTimeDisplay = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
+      return formatDateTime(dateString);
     } catch {
       return dateString;
     }
@@ -318,7 +319,7 @@ export const Payments: React.FC = () => {
               {displayedPayments.map((payment) => (
                 <TableRow key={payment.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell className="font-medium">
-                    {formatDateTime(payment.created_at)}
+                    {formatDateTimeDisplay(payment.created_at)}
                   </TableCell>
                   <TableCell>
                     {getPaymentTypeBadge(payment.payment_type)}

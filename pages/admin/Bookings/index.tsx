@@ -18,6 +18,7 @@ import { Badge } from '../../../components/admin/ui/badge';
 import { Input } from '../../../components/admin/ui/input';
 import { Spinner } from '../../../components/admin/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/admin/ui/select';
+import { formatDateShort, formatDateTime as formatDateTimeUtil } from '../../../lib/dateUtils';
 
 export const Bookings: React.FC = () => {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ export const Bookings: React.FC = () => {
 
   const formatDateTime = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
+      return formatDateTimeUtil(dateString);
     } catch {
       return dateString;
     }
@@ -166,7 +167,7 @@ export const Bookings: React.FC = () => {
           <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
             <Calendar className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-800">
-              Showing bookings for {format(new Date(dateFilter), 'MMM dd, yyyy')}
+              Showing bookings for {formatDateShort(dateFilter)}
             </span>
             <button
               onClick={clearDateFilter}
@@ -257,7 +258,7 @@ export const Bookings: React.FC = () => {
                     <TableCell className="font-medium">
                       <div>{booking.booking_reference}</div>
                       <div className="text-xs text-muted-foreground">
-                        {format(new Date(booking.created_at), 'MMM dd, yyyy')}
+                        {formatDateShort(booking.created_at)}
                       </div>
                     </TableCell>
                     <TableCell>

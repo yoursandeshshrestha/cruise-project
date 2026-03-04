@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '../../../components/admin/ui/table';
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { formatDateShort } from '../../../lib/dateUtils';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -240,7 +241,7 @@ export const AdminDashboard: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {format(new Date(booking.drop_off_datetime), 'MMM d, yyyy')}
+                          {formatDateShort(booking.drop_off_datetime)}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {format(new Date(booking.drop_off_datetime), 'h:mm a')}
