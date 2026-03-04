@@ -19,6 +19,15 @@ interface RevenueAnalytics {
   avg_booking_value: number;
 }
 
+interface CancelBookingResult {
+  success: boolean;
+  message: string;
+  refund_issued: boolean;
+  refund_amount?: number;
+  refund_id?: string;
+  non_refundable?: boolean;
+}
+
 interface BookingsState {
   bookings: Booking[];
   allBookings: Booking[];
@@ -39,7 +48,7 @@ interface BookingsState {
   fetchBookingsByEmail: (email: string) => Promise<Booking[]>;
   createBooking: (booking: BookingInsert) => Promise<Booking | null>;
   updateBooking: (id: string, updates: Partial<Database['public']['Tables']['bookings']['Update']>) => Promise<void>;
-  cancelBooking: (id: string, reason: string) => Promise<void>;
+  cancelBooking: (id: string, reason: string) => Promise<CancelBookingResult>;
   resetPagination: () => void;
 
   // Helpers
@@ -100,13 +109,13 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
   fetchRevenueAnalytics: async () => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_revenue_analytics');
+      // @ts-ignore - Custom RPC function not in generated types
+      const { data, error } = await supabase.rpc('get_revenue_analytics');
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const analytics = data[0];
+      if (data && Array.isArray(data) && data.length > 0) {
+        const analytics = data[0] as Record<string, number>;
         set({
           revenueAnalytics: {
             total_revenue: Number(analytics.total_revenue),
@@ -318,10 +327,10 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
         }),
       });
 
-      const result = await response.json();
+      const result = await response.json() as CancelBookingResult;
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to cancel booking');
+        throw new Error(result.message || 'Failed to cancel booking');
       }
 
       // Fetch updated booking from database
