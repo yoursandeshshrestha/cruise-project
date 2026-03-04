@@ -74,6 +74,8 @@ FUNCTIONS=(
     "send-booking-email"
     "stripe-webhook"
     "cleanup-expired-bookings"
+    "cancel-booking"
+    "send-cancellation-email"
 )
 
 # Track success/failure
@@ -162,6 +164,8 @@ echo "   - create-checkout-session: Creates Stripe Checkout Session for payments
 echo "   - stripe-webhook: Handles Stripe payment events and confirms bookings"
 echo "   - send-booking-email: Sends booking confirmation emails via Mailgun"
 echo "   - cleanup-expired-bookings: Cancels old pending bookings to release capacity"
+echo "   - cancel-booking: Handles booking cancellations with Stripe refunds"
+echo "   - send-cancellation-email: Sends cancellation confirmation emails"
 echo ""
 echo "🔒 Security:"
 echo "   - All functions deployed with --no-verify-jwt (no JWT verification)"
