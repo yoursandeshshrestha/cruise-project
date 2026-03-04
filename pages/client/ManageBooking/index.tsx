@@ -740,7 +740,7 @@ export const ManageBooking: React.FC = () => {
       if (!booking) return;
 
       try {
-        await cancelBookingInStore(booking.id, 'Cancelled by customer via manage booking page');
+        const result = await cancelBookingInStore(booking.id, 'Cancelled by customer via manage booking page');
 
         // Refresh booking data
         const updatedBooking = await fetchBookingByReference(booking.booking_reference);
@@ -749,14 +749,26 @@ export const ManageBooking: React.FC = () => {
         }
 
         setIsCancelOpen(false);
+
+        // Show success message with refund info
+        if (result.non_refundable) {
+          alert(`Booking cancelled successfully. However, as per our cancellation policy, bookings cancelled within 48 hours of the scheduled drop-off time are non-refundable. You will receive a confirmation email shortly.`);
+        } else if (result.refund_issued) {
+          alert(`Booking cancelled successfully! A refund of £${(result.refund_amount / 100).toFixed(2)} has been processed and will appear in your account within 5-10 business days. You will receive a confirmation email shortly.`);
+        } else {
+          alert('Booking cancelled successfully. You will receive a confirmation email shortly.');
+        }
       } catch (error) {
         console.error('Error cancelling booking:', error);
-        alert('Failed to cancel booking. Please try again or contact support.');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to cancel booking. Please try again or contact support.';
+        alert(errorMessage);
       }
   };
 
   if (status === 'dashboard' && booking) {
     const isCancelled = booking.status === 'cancelled';
+    const isCheckedIn = booking.status === 'checked_in' || booking.status === 'completed';
+    const canCancel = !isCancelled && !isCheckedIn;
 
     // Helper to format time
     const formatTime = (dateTimeStr: string) => {
@@ -1021,13 +1033,19 @@ export const ManageBooking: React.FC = () => {
                                         {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                                         {isDownloading ? 'Downloading...' : 'Download Receipt'}
                                     </button>
-                                    {!isCancelled && (
+                                    {canCancel && (
                                         <button
                                             onClick={() => setIsCancelOpen(true)}
                                             className="w-full py-2 px-4 rounded-lg text-sm font-medium border border-red-300 text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 transition-colors cursor-pointer"
                                         >
                                             <XCircle size={16} /> Cancel Booking
                                         </button>
+                                    )}
+                                    {isCheckedIn && !isCancelled && (
+                                        <div className="w-full py-3 px-4 rounded-lg text-xs bg-gray-50 border border-gray-200 text-gray-600 text-center">
+                                            <p className="font-medium">Cannot cancel after check-in</p>
+                                            <p className="mt-1">Please contact support for assistance</p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
