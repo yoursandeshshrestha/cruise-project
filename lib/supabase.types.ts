@@ -178,6 +178,11 @@ export type Database = {
           internal_notes: string | null
           last_name: string
           number_of_passengers: number
+          original_drop_off_datetime: string | null
+          original_return_datetime: string | null
+          original_subtotal: number | null
+          original_total: number | null
+          original_vat: number | null
           parking_type: string | null
           payment_status: string | null
           phone: string
@@ -198,6 +203,8 @@ export type Database = {
           vehicle_make: string
           vehicle_registration: string
           vehicle_type: string
+          weekly_discount_amount: number | null
+          weekly_discount_percent: number | null
         }
         Insert: {
           add_ons?: Json | null
@@ -218,6 +225,11 @@ export type Database = {
           internal_notes?: string | null
           last_name: string
           number_of_passengers: number
+          original_drop_off_datetime?: string | null
+          original_return_datetime?: string | null
+          original_subtotal?: number | null
+          original_total?: number | null
+          original_vat?: number | null
           parking_type?: string | null
           payment_status?: string | null
           phone: string
@@ -238,6 +250,8 @@ export type Database = {
           vehicle_make: string
           vehicle_registration: string
           vehicle_type?: string
+          weekly_discount_amount?: number | null
+          weekly_discount_percent?: number | null
         }
         Update: {
           add_ons?: Json | null
@@ -258,6 +272,11 @@ export type Database = {
           internal_notes?: string | null
           last_name?: string
           number_of_passengers?: number
+          original_drop_off_datetime?: string | null
+          original_return_datetime?: string | null
+          original_subtotal?: number | null
+          original_total?: number | null
+          original_vat?: number | null
           parking_type?: string | null
           payment_status?: string | null
           phone?: string
@@ -278,6 +297,8 @@ export type Database = {
           vehicle_make?: string
           vehicle_registration?: string
           vehicle_type?: string
+          weekly_discount_amount?: number | null
+          weekly_discount_percent?: number | null
         }
         Relationships: []
       }
@@ -532,6 +553,10 @@ export type Database = {
           updated_at: string | null
           van_multiplier: number
           vat_rate: number
+          weekly_discount_1wk: number
+          weekly_discount_2wk: number
+          weekly_discount_3wk: number
+          weekly_discount_4wk: number
         }
         Insert: {
           created_at?: string | null
@@ -547,6 +572,10 @@ export type Database = {
           updated_at?: string | null
           van_multiplier?: number
           vat_rate?: number
+          weekly_discount_1wk?: number
+          weekly_discount_2wk?: number
+          weekly_discount_3wk?: number
+          weekly_discount_4wk?: number
         }
         Update: {
           created_at?: string | null
@@ -562,6 +591,10 @@ export type Database = {
           updated_at?: string | null
           van_multiplier?: number
           vat_rate?: number
+          weekly_discount_1wk?: number
+          weekly_discount_2wk?: number
+          weekly_discount_3wk?: number
+          weekly_discount_4wk?: number
         }
         Relationships: []
       }
