@@ -197,7 +197,24 @@ export const ManageBooking: React.FC = () => {
 
     if (!datesChanged) {
       // Only time changed, no charge
-      return { additionalDays: 0, additionalCharge: 0, dailyBreakdown: [], amendmentFee: 0, pricingReason: null, pricingPriority: null, vatRate: 0 };
+      return {
+        additionalDays: 0,
+        additionalCharge: 0,
+        dailyBreakdown: [],
+        amendmentFee: 0,
+        pricingReason: null,
+        pricingPriority: null,
+        vatRate: 0,
+        additionalCost: 0,
+        additionalVat: 0,
+        oldBookingCost: 0,
+        oldParkingCost: 0,
+        addOnsCost: 0,
+        newBookingCost: 0,
+        newParkingCost: 0,
+        priceDifference: 0,
+        rawPriceDifference: 0,
+      };
     }
 
     // Calculate days
@@ -294,16 +311,20 @@ export const ManageBooking: React.FC = () => {
     const newBaseCost = newParkingCost + addOnsCost;
 
     // OLD booking baseCost (excl VAT) - recalculated to ensure van multiplier is applied
-    const oldBaseCost = oldParkingCost + addOnsCost;
+    // Subtract weekly discount from old parking cost
+    const oldWeeklyDiscountInPounds = (booking.weekly_discount_amount || 0) / 100;
+    const oldBaseCost = oldParkingCost - oldWeeklyDiscountInPounds + addOnsCost;
 
     // Calculate difference in baseCost (excl VAT)
     const baseCostDifference = newBaseCost - oldBaseCost;
 
-    // If difference is negative, only charge amendment fee
-    // If positive, charge difference + amendment fee
+
+
+    // If difference is negative (user decreasing days), only charge amendment fee (no refund)
+    // If positive (user increasing days), charge difference + amendment fee
     const chargeableDifference = Math.max(0, baseCostDifference);
 
-    // Amendment baseCost (excl VAT) = price difference + amendment fee
+    // Amendment baseCost (excl VAT) = chargeable price difference + amendment fee
     const amendmentBaseCost = chargeableDifference + amendmentFee;
 
     // Calculate VAT (following main booking flow)
@@ -326,7 +347,8 @@ export const ManageBooking: React.FC = () => {
       addOnsCost, // in pounds
       newBookingCost: newBaseCost, // in pounds (excl VAT)
       newParkingCost, // in pounds (parking only)
-      priceDifference: chargeableDifference, // in pounds (excl VAT)
+      priceDifference: chargeableDifference, // in pounds (excl VAT) - always 0 or positive (no refunds)
+      rawPriceDifference: baseCostDifference, // raw difference (can be negative) - for display purposes
       vatRate: VAT_RATE, // VAT rate from pricing rules
     };
   };
@@ -355,6 +377,7 @@ export const ManageBooking: React.FC = () => {
     amendmentFee: number;
     pricingReason: string | null;
     pricingPriority: number | null;
+    rawPriceDifference: number;
     oldBookingCost: number;
     oldParkingCost: number;
     addOnsCost: number;
@@ -369,6 +392,9 @@ export const ManageBooking: React.FC = () => {
 
   // Receipt State
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Breakdown State
+  const [isParkingBreakdownExpanded, setIsParkingBreakdownExpanded] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -483,6 +509,7 @@ export const ManageBooking: React.FC = () => {
             newBookingCost: pricingDetails.newBookingCost,
             newParkingCost: pricingDetails.newParkingCost,
             priceDifference: pricingDetails.priceDifference,
+            rawPriceDifference: pricingDetails.rawPriceDifference,
             vatRate: pricingDetails.vatRate,
           });
           setIsBreakdownExpanded(false); // Reset breakdown to collapsed
@@ -529,12 +556,7 @@ export const ManageBooking: React.FC = () => {
       const amendmentSubtotal = amendmentDetails.additionalCost ??
         (amendmentDetails.additionalCharge - amendmentVat);
 
-      console.log('Amendment payment details:', {
-        additionalCharge: amendmentDetails.additionalCharge,
-        vatRate,
-        amendmentSubtotal,
-        amendmentVat,
-      });
+
 
       // Validate numbers before sending
       if (isNaN(amendmentSubtotal) || isNaN(amendmentVat)) {
@@ -556,6 +578,19 @@ export const ManageBooking: React.FC = () => {
             vehicle_make: amendForm.vehicleMake,
             amendment_subtotal: amendmentSubtotal.toFixed(2), // Base cost before VAT (2 decimal places)
             amendment_vat: amendmentVat.toFixed(2), // VAT amount (2 decimal places)
+            // Additional breakdown data
+            daily_breakdown: JSON.stringify(amendmentDetails.dailyBreakdown),
+            amendment_fee: amendmentDetails.amendmentFee.toFixed(2),
+            old_parking_cost: amendmentDetails.oldParkingCost.toFixed(2),
+            new_parking_cost: amendmentDetails.newParkingCost.toFixed(2),
+            add_ons_cost: amendmentDetails.addOnsCost.toFixed(2),
+            price_difference: amendmentDetails.priceDifference.toFixed(2), // Chargeable difference (0 or positive)
+            raw_price_difference: amendmentDetails.rawPriceDifference.toFixed(2), // Actual difference (can be negative)
+            vat_rate: amendmentDetails.vatRate.toString(),
+            pricing_reason: amendmentDetails.pricingReason || '',
+            // Previous booking weekly discount info
+            previous_weekly_discount_percent: booking.weekly_discount_percent?.toString() || '0',
+            previous_weekly_discount_amount: ((booking.weekly_discount_amount || 0) / 100).toFixed(2),
           },
         },
       });
@@ -564,7 +599,6 @@ export const ManageBooking: React.FC = () => {
 
       // Redirect to Stripe Checkout (same as booking flow)
       if (data && data.url) {
-        console.log('Redirecting to Stripe Checkout:', data.url);
         window.location.href = data.url;
         // Don't set isSavingAmend to false - keep the loading state until redirect completes
       } else {
@@ -738,6 +772,133 @@ export const ManageBooking: React.FC = () => {
     const vatInPounds = booking.vat / 100;
     const discountInPounds = booking.discount / 100;
 
+    // Calculate detailed breakdown for Payment Summary
+    const dropOffDate = new Date(booking.drop_off_datetime);
+    const returnDate = new Date(booking.return_datetime);
+    const diffTime = Math.abs(returnDate.getTime() - dropOffDate.getTime());
+    const parkingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    const isVan = booking.vehicle_type === 'van';
+    const { pricingRules } = usePricingStore.getState();
+    const standardPricing = pricingRules.find(rule => rule.priority === 2 && rule.is_active);
+
+    // Calculate car parking cost by day with detailed breakdown
+    let carParkingTotal = 0;
+    let firstDayPricing = null;
+    let vanMultiplier = standardPricing?.van_multiplier ?? 0;
+
+    // Store daily breakdown for grouping
+    interface DailyBreakdown {
+      dayNumber: number;
+      date: Date;
+      rate: number;
+      ruleId: string;
+    }
+    const dailyBreakdown: DailyBreakdown[] = [];
+
+    for (let i = 0; i < parkingDays; i++) {
+      const currentDate = new Date(dropOffDate);
+      currentDate.setDate(currentDate.getDate() + i);
+      const dayPricing = getPricingForDate(currentDate) || standardPricing;
+
+      if (i === 0) {
+        firstDayPricing = dayPricing;
+        vanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
+      }
+
+      const dailyRate = dayPricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
+      carParkingTotal += dailyRate;
+
+      dailyBreakdown.push({
+        dayNumber: i + 1,
+        date: currentDate,
+        rate: dailyRate,
+        ruleId: dayPricing?.id || 'standard'
+      });
+    }
+
+    // Group consecutive days with same pricing rule
+    interface GroupedBreakdown {
+      startDay: number;
+      endDay: number;
+      startDate: Date;
+      endDate: Date;
+      rate: number;
+      days: number;
+      subtotal: number;
+    }
+    const groupedBreakdown: GroupedBreakdown[] = [];
+
+    if (dailyBreakdown.length > 0) {
+      let currentGroup = {
+        startDay: dailyBreakdown[0].dayNumber,
+        endDay: dailyBreakdown[0].dayNumber,
+        startDate: dailyBreakdown[0].date,
+        endDate: dailyBreakdown[0].date,
+        rate: dailyBreakdown[0].rate,
+        ruleId: dailyBreakdown[0].ruleId,
+        days: 1,
+        subtotal: dailyBreakdown[0].rate
+      };
+
+      for (let i = 1; i < dailyBreakdown.length; i++) {
+        const day = dailyBreakdown[i];
+
+        // Check if this day has same rate and is consecutive
+        if (day.rate === currentGroup.rate && day.ruleId === currentGroup.ruleId) {
+          // Extend current group
+          currentGroup.endDay = day.dayNumber;
+          currentGroup.endDate = day.date;
+          currentGroup.days += 1;
+          currentGroup.subtotal += day.rate;
+        } else {
+          // Save current group and start new one
+          groupedBreakdown.push({
+            startDay: currentGroup.startDay,
+            endDay: currentGroup.endDay,
+            startDate: currentGroup.startDate,
+            endDate: currentGroup.endDate,
+            rate: currentGroup.rate,
+            days: currentGroup.days,
+            subtotal: currentGroup.subtotal
+          });
+
+          currentGroup = {
+            startDay: day.dayNumber,
+            endDay: day.dayNumber,
+            startDate: day.date,
+            endDate: day.date,
+            rate: day.rate,
+            ruleId: day.ruleId,
+            days: 1,
+            subtotal: day.rate
+          };
+        }
+      }
+
+      // Push the last group
+      groupedBreakdown.push({
+        startDay: currentGroup.startDay,
+        endDay: currentGroup.endDay,
+        startDate: currentGroup.startDate,
+        endDate: currentGroup.endDate,
+        rate: currentGroup.rate,
+        days: currentGroup.days,
+        subtotal: currentGroup.subtotal
+      });
+    }
+
+    // Calculate add-ons cost
+    let addOnsTotal = 0;
+    if (booking.add_ons && Array.isArray(booking.add_ons) && booking.add_ons.length > 0) {
+      (booking.add_ons as string[]).forEach((slug) => {
+        const addon = addOns.find(a => a.slug === slug);
+        if (addon) {
+          addOnsTotal += addon.price;
+        }
+      });
+    }
+
     return (
         <Layout>
             <div className="bg-neutral-light pb-12 relative">
@@ -847,13 +1008,14 @@ export const ManageBooking: React.FC = () => {
                             <div className="bg-white rounded-lg border border-gray-200 p-5">
                                 <h3 className="font-semibold text-brand-dark mb-4">Quick Actions</h3>
                                 <div className="space-y-2">
-                                    <button
-                                        onClick={handleOpenAmend}
-                                        disabled={isCancelled}
-                                        className="w-full py-2 px-4 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                                    >
-                                        <Edit size={16} /> Amend Booking
-                                    </button>
+                                    {!isCancelled && (!booking.amendment_history || (Array.isArray(booking.amendment_history) && booking.amendment_history.length === 0)) && (
+                                        <button
+                                            onClick={handleOpenAmend}
+                                            className="w-full py-2 px-4 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                                        >
+                                            <Edit size={16} /> Amend Booking
+                                        </button>
+                                    )}
                                     <button
                                         onClick={handleDownloadReceipt}
                                         disabled={isDownloading}
@@ -871,11 +1033,6 @@ export const ManageBooking: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                {!isCancelled && (
-                                    <p className="text-xs text-gray-400 mt-4 text-center">
-                                        Free cancellation available until {new Date(new Date(booking.drop_off_datetime).setDate(new Date(booking.drop_off_datetime).getDate() - 2)).toLocaleDateString('en-GB')}
-                                    </p>
-                                )}
                             </div>
 
                             {/* Payment Summary */}
@@ -884,36 +1041,390 @@ export const ManageBooking: React.FC = () => {
                                     <CreditCard size={18} className="text-primary" />
                                     <h3 className="font-semibold text-brand-dark">Payment Summary</h3>
                                 </div>
-                                <div className="space-y-2 text-sm">
-                                    {booking.add_ons && Array.isArray(booking.add_ons) && booking.add_ons.length > 0 && (
-                                      <div className="pb-2 border-b border-gray-100">
-                                        <p className="text-xs text-gray-500 mb-2">Add-ons:</p>
-                                        {(booking.add_ons as string[]).map((slug, index) => {
-                                          const addon = addOns.find(a => a.slug === slug);
-                                          return addon ? (
-                                            <div key={index} className="flex justify-between mb-1">
-                                              <span className="text-gray-600 text-xs">{addon.name}</span>
-                                              <span className="font-medium text-xs">£{addon.price.toFixed(2)}</span>
+                                <div className="space-y-4 text-sm">
+                                    {/* Original Booking Section */}
+                                    <div className="space-y-2">
+                                        <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Original Booking</h4>
+
+                                        {(() => {
+                                          // Calculate original booking details
+                                          const originalDropOff = booking.original_drop_off_datetime || booking.drop_off_datetime;
+                                          const originalReturn = booking.original_return_datetime || booking.return_datetime;
+                                          const origDropOffDate = new Date(originalDropOff);
+                                          const origReturnDate = new Date(originalReturn);
+                                          const origDiffTime = Math.abs(origReturnDate.getTime() - origDropOffDate.getTime());
+                                          const origParkingDays = Math.ceil(origDiffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                                          // Calculate original parking cost breakdown
+                                          let origCarParkingTotal = 0;
+                                          let origFirstDayPricing = null;
+                                          let origVanMultiplier = standardPricing?.van_multiplier ?? 0;
+                                          const origDailyBreakdown: DailyBreakdown[] = [];
+
+                                          for (let i = 0; i < origParkingDays; i++) {
+                                            const currentDate = new Date(origDropOffDate);
+                                            currentDate.setDate(currentDate.getDate() + i);
+                                            const dayPricing = getPricingForDate(currentDate) || standardPricing;
+
+                                            if (i === 0) {
+                                              origFirstDayPricing = dayPricing;
+                                              origVanMultiplier = dayPricing?.van_multiplier ?? standardPricing?.van_multiplier ?? 0;
+                                            }
+
+                                            const dailyRate = dayPricing?.price_per_day ?? standardPricing?.price_per_day ?? 0;
+                                            origCarParkingTotal += dailyRate;
+
+                                            origDailyBreakdown.push({
+                                              dayNumber: i + 1,
+                                              date: currentDate,
+                                              rate: dailyRate,
+                                              ruleId: dayPricing?.id || 'standard'
+                                            });
+                                          }
+
+                                          // Group consecutive days for original booking
+                                          const origGroupedBreakdown: GroupedBreakdown[] = [];
+                                          if (origDailyBreakdown.length > 0) {
+                                            let currentGroup = {
+                                              startDay: origDailyBreakdown[0].dayNumber,
+                                              endDay: origDailyBreakdown[0].dayNumber,
+                                              startDate: origDailyBreakdown[0].date,
+                                              endDate: origDailyBreakdown[0].date,
+                                              rate: origDailyBreakdown[0].rate,
+                                              ruleId: origDailyBreakdown[0].ruleId,
+                                              days: 1,
+                                              subtotal: origDailyBreakdown[0].rate
+                                            };
+
+                                            for (let i = 1; i < origDailyBreakdown.length; i++) {
+                                              const day = origDailyBreakdown[i];
+                                              if (day.rate === currentGroup.rate && day.ruleId === currentGroup.ruleId) {
+                                                currentGroup.endDay = day.dayNumber;
+                                                currentGroup.endDate = day.date;
+                                                currentGroup.days += 1;
+                                                currentGroup.subtotal += day.rate;
+                                              } else {
+                                                origGroupedBreakdown.push({
+                                                  startDay: currentGroup.startDay,
+                                                  endDay: currentGroup.endDay,
+                                                  startDate: currentGroup.startDate,
+                                                  endDate: currentGroup.endDate,
+                                                  rate: currentGroup.rate,
+                                                  days: currentGroup.days,
+                                                  subtotal: currentGroup.subtotal
+                                                });
+                                                currentGroup = {
+                                                  startDay: day.dayNumber,
+                                                  endDay: day.dayNumber,
+                                                  startDate: day.date,
+                                                  endDate: day.date,
+                                                  rate: day.rate,
+                                                  ruleId: day.ruleId,
+                                                  days: 1,
+                                                  subtotal: day.rate
+                                                };
+                                              }
+                                            }
+                                            origGroupedBreakdown.push({
+                                              startDay: currentGroup.startDay,
+                                              endDay: currentGroup.endDay,
+                                              startDate: currentGroup.startDate,
+                                              endDate: currentGroup.endDate,
+                                              rate: currentGroup.rate,
+                                              days: currentGroup.days,
+                                              subtotal: currentGroup.subtotal
+                                            });
+                                          }
+
+                                          const origParkingSubtotalPence = isVan ? Math.round(origCarParkingTotal * origVanMultiplier * 100) : Math.round(origCarParkingTotal * 100);
+
+                                          return (
+                                            <>
+                                              {/* Original Parking with Breakdown */}
+                                              <div>
+                                                <div className="flex justify-between font-semibold text-gray-700">
+                                                  <span>Parking ({origParkingDays} {origParkingDays === 1 ? 'day' : 'days'})</span>
+                                                  <span>£{origCarParkingTotal.toFixed(2)}</span>
+                                                </div>
+
+                                                {/* Collapsible breakdown */}
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setIsParkingBreakdownExpanded(!isParkingBreakdownExpanded)}
+                                                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mt-1 cursor-pointer"
+                                                >
+                                                  {isParkingBreakdownExpanded ? (
+                                                    <>
+                                                      <ChevronUp size={14} />
+                                                      Hide breakdown
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <ChevronDown size={14} />
+                                                      Show breakdown
+                                                    </>
+                                                  )}
+                                                </button>
+
+                                                {isParkingBreakdownExpanded && origGroupedBreakdown.length > 0 && (
+                                                  <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-gray-200">
+                                                    {origGroupedBreakdown.map((group, index) => {
+                                                      const isSingleDay = group.startDay === group.endDay;
+                                                      const dateRange = isSingleDay
+                                                        ? format(group.startDate, 'd MMM')
+                                                        : `${format(group.startDate, 'd MMM')} - ${format(group.endDate, 'd MMM')}`;
+                                                      const dayRange = isSingleDay
+                                                        ? `Day ${group.startDay}`
+                                                        : `Days ${group.startDay}-${group.endDay}`;
+
+                                                      return (
+                                                        <div key={index} className="text-xs">
+                                                          <div className="flex justify-between text-gray-600">
+                                                            <span>{dayRange} ({dateRange})</span>
+                                                            <span>£{group.rate.toFixed(2)}/day</span>
+                                                          </div>
+                                                          {!isSingleDay && (
+                                                            <div className="flex justify-between text-gray-500 text-[11px] mt-0.5">
+                                                              <span>{group.days} days × £{group.rate.toFixed(2)}</span>
+                                                              <span>£{group.subtotal.toFixed(2)}</span>
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Original Van Surcharge */}
+                                              {isVan && origVanMultiplier > 0 && (
+                                                <div className="flex justify-between text-sm text-blue-700 items-center">
+                                                  <span>Van Surcharge ({origVanMultiplier}×)</span>
+                                                  <span>£{(Math.round(origCarParkingTotal * origVanMultiplier) - origCarParkingTotal).toFixed(2)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Original Weekly Discount */}
+                                              {booking.weekly_discount_amount && booking.weekly_discount_amount > 0 && (
+                                                <>
+                                                  <div className="flex justify-between text-sm text-green-600 items-center">
+                                                    <span>Weekly Discount ({booking.weekly_discount_percent}%)</span>
+                                                    <span>-£{(booking.weekly_discount_amount / 100).toFixed(2)}</span>
+                                                  </div>
+                                                  <div className="flex justify-between text-sm font-semibold text-gray-800 items-center pt-1 border-t border-gray-300">
+                                                    <span>Parking Subtotal</span>
+                                                    <span>£{((origParkingSubtotalPence - booking.weekly_discount_amount) / 100).toFixed(2)}</span>
+                                                  </div>
+                                                </>
+                                              )}
+
+                                              {/* Original Add-ons */}
+                                              {addOnsTotal > 0 && (
+                                                <div className="flex justify-between text-sm text-gray-600">
+                                                  <span>Add-ons</span>
+                                                  <span>£{addOnsTotal.toFixed(2)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Original Subtotal */}
+                                              <div className="flex justify-between pt-2 border-t border-gray-200">
+                                                <span className="text-gray-600">Subtotal</span>
+                                                <span className="font-medium">£{((booking.original_subtotal || booking.subtotal) / 100).toFixed(2)}</span>
+                                              </div>
+
+                                              {/* Original VAT */}
+                                              {((booking.original_vat || booking.vat) / 100) > 0 && (
+                                                <div className="flex justify-between">
+                                                  <span className="text-gray-600">VAT</span>
+                                                  <span className="font-medium">£{((booking.original_vat || booking.vat) / 100).toFixed(2)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Original Promo Discount */}
+                                              {discountInPounds > 0 && (
+                                                <div className="flex justify-between text-green-600">
+                                                  <span>Promo Discount{booking.promo_code && ` (${booking.promo_code})`}</span>
+                                                  <span className="font-medium">-£{discountInPounds.toFixed(2)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Original Total */}
+                                              <div className="flex justify-between pt-2 border-t border-gray-200 font-semibold text-gray-800">
+                                                <span>Original Total</span>
+                                                <span>£{((booking.original_total || booking.total) / 100).toFixed(2)}</span>
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
+                                    </div>
+
+                                    {/* Amendments Section */}
+                                    {booking.amendment_history && Array.isArray(booking.amendment_history) && booking.amendment_history.length > 0 && (
+                                      <>
+                                        {(booking.amendment_history as any[]).map((amendment, idx) => {
+                                          const amendNum = idx + 1;
+                                          const amendmentSubtotal = amendment.amendment_subtotal || 0;
+                                          const amendmentVat = amendment.amendment_vat || 0;
+                                          const amendmentCharge = amendment.amendment_charge || 0;
+
+                                          // Calculate NEW booking day-by-day pricing
+                                          const newDropOffDate = new Date(amendment.new_drop_off_datetime);
+                                          const newReturnDate = new Date(amendment.new_return_datetime);
+                                          const newDiffTime = Math.abs(newReturnDate.getTime() - newDropOffDate.getTime());
+                                          const newDays = Math.ceil(newDiffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                                          let newCarParkingTotal = 0;
+                                          let newFirstDayPricing = null;
+                                          for (let i = 0; i < newDays; i++) {
+                                            const currentDate = new Date(newDropOffDate);
+                                            currentDate.setDate(currentDate.getDate() + i);
+                                            const dayPricing = getPricingForDate(currentDate) || standardPricing;
+                                            if (i === 0) {
+                                              newFirstDayPricing = dayPricing;
+                                            }
+                                            const dayPrice = dayPricing?.price_per_day || 0;
+                                            newCarParkingTotal += dayPrice;
+                                          }
+
+                                          const newPricingRule = newFirstDayPricing || standardPricing;
+                                          const newVanMultiplier = newPricingRule?.van_multiplier || 1.5;
+                                          const newParkingTotal = isVan ? Math.round(newCarParkingTotal * newVanMultiplier) : newCarParkingTotal;
+                                          const newParkingCostPence = newParkingTotal * 100;
+
+                                          // Calculate PREVIOUS parking cost from dates
+                                          const prevDropOffDate = new Date(amendment.previous_drop_off_datetime);
+                                          const prevReturnDate = new Date(amendment.previous_return_datetime);
+                                          const prevDiffTime = Math.abs(prevReturnDate.getTime() - prevDropOffDate.getTime());
+                                          const prevDays = Math.ceil(prevDiffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                                          let prevCarParkingTotal = 0;
+                                          for (let i = 0; i < prevDays; i++) {
+                                            const currentDate = new Date(prevDropOffDate);
+                                            currentDate.setDate(currentDate.getDate() + i);
+                                            const dayPricing = getPricingForDate(currentDate) || standardPricing;
+                                            const dayPrice = dayPricing?.price_per_day || 0;
+                                            prevCarParkingTotal += dayPrice;
+                                          }
+
+                                          const prevPricingRule = getPricingForDate(prevDropOffDate) || standardPricing;
+                                          const prevVanMultiplier = prevPricingRule?.van_multiplier || 1.5;
+                                          const prevParkingSubtotal = isVan ? Math.round(prevCarParkingTotal * prevVanMultiplier) : prevCarParkingTotal;
+                                          const prevParkingCostPence = prevParkingSubtotal * 100;
+
+                                          // Use booking's weekly discount for previous parking
+                                          const prevWeeklyDiscount = booking.weekly_discount_amount || 0;
+                                          const prevParkingWithDiscount = prevParkingCostPence - prevWeeklyDiscount;
+                                          const parkingDiff = (newParkingCostPence - prevParkingWithDiscount) / 100;
+
+                                          // Calculate amendment fee from subtotal (only use positive parking diff, no refunds)
+                                          const chargeableParkingDiff = Math.max(0, parkingDiff);
+                                          const amendmentFeeAmount = amendmentSubtotal - (chargeableParkingDiff * 100);
+
+                                          const prevDropOff = format(new Date(amendment.previous_drop_off_datetime), 'd MMM, yyyy');
+                                          const prevReturn = format(new Date(amendment.previous_return_datetime), 'd MMM, yyyy');
+                                          const newDropOff = format(new Date(amendment.new_drop_off_datetime), 'd MMM, yyyy');
+                                          const newReturn = format(new Date(amendment.new_return_datetime), 'd MMM, yyyy');
+
+                                          return (
+                                            <div key={idx} className="space-y-2 pt-4 border-t-2 border-gray-300">
+                                              <div className="flex justify-between items-baseline">
+                                                <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide">
+                                                  Amendment #{amendNum} <span className="text-blue-600">+£{(amendmentCharge / 100).toFixed(2)}</span>
+                                                </h4>
+                                              </div>
+
+                                              <div className="text-xs text-gray-600 space-y-0.5">
+                                                <div><span className="font-medium">Previous:</span> {prevDropOff} - {prevReturn}</div>
+                                                <div><span className="font-medium">New:</span> {newDropOff} - {newReturn}</div>
+                                              </div>
+
+                                              {/* Previous Parking */}
+                                              <div className="flex justify-between text-sm text-gray-600">
+                                                <span>Previous Parking (with discount)</span>
+                                                <span>£{(prevParkingWithDiscount / 100).toFixed(2)}</span>
+                                              </div>
+
+                                              {/* New Parking */}
+                                              <div className="flex justify-between text-sm font-semibold text-gray-700">
+                                                <span>New Parking ({newDays} days)</span>
+                                                <span>£{(newParkingCostPence / 100).toFixed(2)}</span>
+                                              </div>
+
+                                              {/* New Parking Breakdown (if available) */}
+                                              {amendment.daily_breakdown && Array.isArray(amendment.daily_breakdown) && amendment.daily_breakdown.length > 0 && (
+                                                <div className="pl-3 border-l-2 border-gray-200 space-y-1">
+                                                  {(() => {
+                                                    // Group consecutive days with same rate
+                                                    const grouped: any[] = [];
+                                                    let current = { ...amendment.daily_breakdown[0], days: 1, total: amendment.daily_breakdown[0].rate };
+
+                                                    for (let i = 1; i < amendment.daily_breakdown.length; i++) {
+                                                      const day = amendment.daily_breakdown[i];
+                                                      if (day.rate === current.rate) {
+                                                        current.days += 1;
+                                                        current.total += day.rate;
+                                                      } else {
+                                                        grouped.push(current);
+                                                        current = { ...day, days: 1, total: day.rate };
+                                                      }
+                                                    }
+                                                    grouped.push(current);
+
+                                                    return grouped.map((group, gIdx) => (
+                                                      <div key={gIdx} className="text-xs text-gray-600">
+                                                        <div className="flex justify-between">
+                                                          <span>
+                                                            {group.days > 1 ? `${group.days} days × £${(group.rate / 100).toFixed(2)}` : `1 day`}
+                                                          </span>
+                                                          <span>£{(group.total / 100).toFixed(2)}</span>
+                                                        </div>
+                                                      </div>
+                                                    ));
+                                                  })()}
+                                                </div>
+                                              )}
+
+                                              {/* Parking Difference */}
+                                              <div className={`flex justify-between text-sm font-medium ${parkingDiff < 0 ? 'text-gray-600' : 'text-gray-700'}`}>
+                                                <span>Parking Difference</span>
+                                                <span>{parkingDiff < 0 ? '-' : ''}£{Math.abs(parkingDiff).toFixed(2)}</span>
+                                              </div>
+
+                                              {/* Amendment Fee */}
+                                              {amendmentFeeAmount > 0 && (
+                                                <div className="flex justify-between text-sm text-gray-600">
+                                                  <span>Amendment Fee</span>
+                                                  <span>£{(amendmentFeeAmount / 100).toFixed(2)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Amendment Subtotal */}
+                                              <div className="flex justify-between pt-1 border-t border-gray-200 text-sm">
+                                                <span className="text-gray-600">Subtotal</span>
+                                                <span className="font-medium">£{(amendmentSubtotal / 100).toFixed(2)}</span>
+                                              </div>
+
+                                              {/* Amendment VAT */}
+                                              {amendmentVat > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                  <span className="text-gray-600">VAT</span>
+                                                  <span className="font-medium">£{(amendmentVat / 100).toFixed(2)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Amendment Total */}
+                                              <div className="flex justify-between pt-1 border-t border-gray-200 text-sm font-semibold text-blue-700">
+                                                <span>Amendment Total</span>
+                                                <span>£{(amendmentCharge / 100).toFixed(2)}</span>
+                                              </div>
                                             </div>
-                                          ) : null;
+                                          );
                                         })}
-                                      </div>
+                                      </>
                                     )}
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Subtotal</span>
-                                        <span className="font-medium">£{subtotalInPounds.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">VAT</span>
-                                        <span className="font-medium">£{vatInPounds.toFixed(2)}</span>
-                                    </div>
-                                    {discountInPounds > 0 && (
-                                      <div className="flex justify-between text-green-600">
-                                        <span>Discount{booking.promo_code && ` (${booking.promo_code})`}</span>
-                                        <span className="font-medium">-£{discountInPounds.toFixed(2)}</span>
-                                      </div>
-                                    )}
-                                    <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
+
+                                    {/* Final Total Paid */}
+                                    <div className="border-t-2 border-gray-300 pt-3 flex justify-between items-center">
                                         <span className="font-bold text-brand-dark text-base">Total Paid</span>
                                         <span className="font-bold text-brand-dark text-xl">£{totalInPounds.toFixed(2)}</span>
                                     </div>
@@ -1089,6 +1600,18 @@ export const ManageBooking: React.FC = () => {
                                             <span>Parking</span>
                                             <span>£{amendmentDetails.oldParkingCost.toFixed(2)}</span>
                                         </div>
+                                        {booking.weekly_discount_amount > 0 && (
+                                            <>
+                                                <div className="flex justify-between text-green-600">
+                                                    <span>Weekly Discount ({booking.weekly_discount_percent}%)</span>
+                                                    <span>-£{(booking.weekly_discount_amount / 100).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-gray-600 font-medium pt-1 border-t border-gray-300">
+                                                    <span>Parking Subtotal</span>
+                                                    <span>£{(amendmentDetails.oldParkingCost - (booking.weekly_discount_amount / 100)).toFixed(2)}</span>
+                                                </div>
+                                            </>
+                                        )}
                                         {amendmentDetails.addOnsCost > 0 && (
                                             <div className="flex justify-between text-gray-600">
                                                 <span>Add-ons</span>
@@ -1116,12 +1639,22 @@ export const ManageBooking: React.FC = () => {
                                         </div>
                                         <div className="flex justify-between text-red-600">
                                             <span>Less: Old Parking</span>
-                                            <span>-£{amendmentDetails.oldParkingCost.toFixed(2)}</span>
+                                            <span>-£{(amendmentDetails.oldParkingCost - (booking.weekly_discount_amount || 0) / 100).toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between text-primary font-semibold pt-1 border-t border-blue-200">
+                                        <div className={`flex justify-between font-semibold pt-1 border-t border-blue-200 ${(amendmentDetails.rawPriceDifference || 0) < 0 ? 'text-gray-600' : 'text-primary'}`}>
                                             <span>Parking Difference</span>
-                                            <span>£{amendmentDetails.priceDifference.toFixed(2)}</span>
+                                            <span>{(amendmentDetails.rawPriceDifference || 0) < 0 ? '-' : ''}£{Math.abs(amendmentDetails.rawPriceDifference || 0).toFixed(2)}</span>
                                         </div>
+                                        {amendmentDetails.rawPriceDifference < 0 && (
+                                            <div className="bg-orange-50 border border-orange-200 rounded p-2 mt-2">
+                                                <div className="flex items-start gap-2">
+                                                    <AlertCircle size={14} className="text-orange-600 mt-0.5 shrink-0" />
+                                                    <p className="text-[11px] text-orange-700">
+                                                        <span className="font-semibold">No refund available.</span> You're reducing your booking from {Math.ceil(Math.abs(new Date(booking.return_datetime).getTime() - new Date(booking.drop_off_datetime).getTime()) / (1000 * 60 * 60 * 24)) + 1} days to {amendmentDetails.dailyBreakdown.length} days. We don't provide refunds for decreased parking duration.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div>
@@ -1139,27 +1672,100 @@ export const ManageBooking: React.FC = () => {
                                             </span>
                                         </div>
                                         {isBreakdownExpanded && amendmentDetails.dailyBreakdown.length > 0 && (
-                                            <div className="mt-2 space-y-1 pl-4 pb-2 max-h-48 overflow-y-auto">
-                                                {amendmentDetails.dailyBreakdown.map((daily, index) => (
-                                                    <div key={index} className="flex justify-between text-xs text-gray-500">
-                                                        <span>Day {daily.day} ({daily.date})</span>
-                                                        <span>£{daily.rate.toFixed(2)}</span>
-                                                    </div>
-                                                ))}
+                                            <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-gray-200 max-h-48 overflow-y-auto">
+                                                {(() => {
+                                                    // Group consecutive days with same rate
+                                                    const groups: Array<{
+                                                        startDay: number;
+                                                        endDay: number;
+                                                        startDate: string;
+                                                        endDate: string;
+                                                        rate: number;
+                                                        days: number;
+                                                        subtotal: number;
+                                                    }> = [];
+
+                                                    if (amendmentDetails.dailyBreakdown.length > 0) {
+                                                        let currentGroup = {
+                                                            startDay: amendmentDetails.dailyBreakdown[0].day,
+                                                            endDay: amendmentDetails.dailyBreakdown[0].day,
+                                                            startDate: amendmentDetails.dailyBreakdown[0].date,
+                                                            endDate: amendmentDetails.dailyBreakdown[0].date,
+                                                            rate: amendmentDetails.dailyBreakdown[0].rate,
+                                                            days: 1,
+                                                            subtotal: amendmentDetails.dailyBreakdown[0].rate
+                                                        };
+
+                                                        for (let i = 1; i < amendmentDetails.dailyBreakdown.length; i++) {
+                                                            const day = amendmentDetails.dailyBreakdown[i];
+
+                                                            if (day.rate === currentGroup.rate) {
+                                                                currentGroup.endDay = day.day;
+                                                                currentGroup.endDate = day.date;
+                                                                currentGroup.days += 1;
+                                                                currentGroup.subtotal += day.rate;
+                                                            } else {
+                                                                groups.push({ ...currentGroup });
+                                                                currentGroup = {
+                                                                    startDay: day.day,
+                                                                    endDay: day.day,
+                                                                    startDate: day.date,
+                                                                    endDate: day.date,
+                                                                    rate: day.rate,
+                                                                    days: 1,
+                                                                    subtotal: day.rate
+                                                                };
+                                                            }
+                                                        }
+                                                        groups.push(currentGroup);
+                                                    }
+
+                                                    return groups.map((group, index) => {
+                                                        const isSingleDay = group.startDay === group.endDay;
+                                                        const dayRange = isSingleDay
+                                                            ? `Day ${group.startDay}`
+                                                            : `Days ${group.startDay}-${group.endDay}`;
+
+                                                        // Parse dates to get just the day and month
+                                                        const startParts = group.startDate.split(' ');
+                                                        const endParts = group.endDate.split(' ');
+                                                        const dateRange = isSingleDay
+                                                            ? `${startParts[1]} ${startParts[0]}`
+                                                            : `${startParts[1]} ${startParts[0]} - ${endParts[1]} ${endParts[0]}`;
+
+                                                        return (
+                                                            <div key={index} className="text-xs">
+                                                                <div className="flex justify-between text-gray-600">
+                                                                    <span>{dayRange} ({dateRange})</span>
+                                                                    <span>£{group.rate.toFixed(2)}/day</span>
+                                                                </div>
+                                                                {!isSingleDay && (
+                                                                    <div className="flex justify-between text-gray-500 text-[11px] mt-0.5">
+                                                                        <span>{group.days} days × £{group.rate.toFixed(2)}</span>
+                                                                        <span>£{group.subtotal.toFixed(2)}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    });
+                                                })()}
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="border-t border-gray-200 pt-3 space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-700">Price Difference</span>
-                                            <span className="font-medium">£{amendmentDetails.priceDifference.toFixed(2)}</span>
-                                        </div>
+                                        <div className="text-xs text-gray-700 font-semibold mb-1">Amount to Pay</div>
+                                        {amendmentDetails.priceDifference > 0 && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-700">Additional Parking</span>
+                                                <span className="font-medium">£{amendmentDetails.priceDifference.toFixed(2)}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-700">Amendment Fee</span>
                                             <span className="font-medium">£{amendmentDetails.amendmentFee.toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm">
+                                        <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
                                             <span className="text-gray-600">Subtotal</span>
                                             <span className="font-medium">£{(amendmentDetails.priceDifference + amendmentDetails.amendmentFee).toFixed(2)}</span>
                                         </div>
@@ -1167,7 +1773,7 @@ export const ManageBooking: React.FC = () => {
                                     {amendmentDetails.vatRate > 0 && (
                                       <div className="flex justify-between text-sm">
                                           <span className="text-gray-600">VAT ({(amendmentDetails.vatRate * 100).toFixed(0)}%)</span>
-                                          <span className="font-medium">£{(amendmentDetails.additionalCharge * amendmentDetails.vatRate / (1 + amendmentDetails.vatRate)).toFixed(2)}</span>
+                                          <span className="font-medium">£{((amendmentDetails.priceDifference + amendmentDetails.amendmentFee) * amendmentDetails.vatRate).toFixed(2)}</span>
                                       </div>
                                     )}
                                 </div>
