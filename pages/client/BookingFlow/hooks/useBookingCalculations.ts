@@ -116,9 +116,9 @@ export const useBookingCalculations = (
         carParkingCost += dailyRate;
 
         dailyCosts.push({
-          name: dayPricing.name || 'Standard Pricing',
+          name: dayPricing?.name || 'Standard Pricing',
           rate: dailyRate,
-          ruleId: dayPricing.id || 'default',
+          ruleId: dayPricing?.id || 'default',
           date: new Date(currentDate),
           dayNumber: i + 1,
         });
