@@ -15,37 +15,31 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/admin/ui/table';
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { formatDateShort } from '../../../lib/dateUtils';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { adminUser } = useAuthStore();
-  const { bookings, loading, fetchBookings, initialized } = useBookingsStore();
+  const { bookings, loading, fetchBookings, initialized, revenueAnalytics, fetchRevenueAnalytics } = useBookingsStore();
 
   useEffect(() => {
     if (!initialized) {
       fetchBookings();
+      fetchRevenueAnalytics();
     }
-  }, [initialized, fetchBookings]);
+  }, [initialized, fetchBookings, fetchRevenueAnalytics]);
 
   const userName = adminUser?.email?.split('@')[0] || 'Admin';
 
   const stats = useMemo(() => {
     const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
 
-    // Total revenue (convert pence to pounds)
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.total / 100), 0);
-
-    // This month revenue
-    const thisMonthBookings = bookings.filter(
-      b => new Date(b.created_at) >= monthStart && new Date(b.created_at) <= monthEnd
-    );
-    const monthRevenue = thisMonthBookings.reduce((sum, b) => sum + (b.total / 100), 0);
+    // Revenue from backend (completed payments only)
+    const totalRevenue = revenueAnalytics ? revenueAnalytics.total_revenue / 100 : 0;
+    const monthRevenue = revenueAnalytics ? revenueAnalytics.month_revenue / 100 : 0;
 
     // Total bookings count
     const totalBookings = bookings.length;
@@ -68,7 +62,7 @@ export const AdminDashboard: React.FC = () => {
       todaysArrivals: todaysArrivals.length,
       confirmedBookings,
     };
-  }, [bookings]);
+  }, [bookings, revenueAnalytics]);
 
   // Recent bookings (last 5)
   const recentBookings = useMemo(() => {

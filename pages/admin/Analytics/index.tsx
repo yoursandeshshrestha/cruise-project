@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { AdminLayout } from '../../../components/admin/AdminLayout';
 import { KPICard } from '../../../components/admin/KPICard';
 import { useBookingsStore } from '../../../stores/bookingsStore';
-import { format, startOfMonth, endOfMonth, startOfYear, subDays, differenceInDays } from 'date-fns';
+import { subDays, differenceInDays } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -14,36 +14,31 @@ import {
 import { Spinner } from '../../../components/admin/ui/spinner';
 
 export const Analytics: React.FC = () => {
-  const { bookings, loading, fetchBookings, initialized } = useBookingsStore();
+  const { bookings, loading, fetchBookings, initialized, revenueAnalytics, fetchRevenueAnalytics } = useBookingsStore();
 
   useEffect(() => {
     if (!initialized) {
       fetchBookings();
+      fetchRevenueAnalytics();
     }
-  }, [initialized, fetchBookings]);
+  }, [initialized, fetchBookings, fetchRevenueAnalytics]);
 
   const analytics = useMemo(() => {
     const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
-    const yearStart = startOfYear(now);
     const last30Days = subDays(now, 30);
 
-    // Filter bookings by date ranges
-    const thisMonthBookings = bookings.filter(
-      b => new Date(b.created_at) >= monthStart && new Date(b.created_at) <= monthEnd
-    );
-    const thisYearBookings = bookings.filter(
-      b => new Date(b.created_at) >= yearStart
-    );
+    // Filter bookings with completed payments only for revenue calculations
+    const paidBookings = bookings.filter(b => b.payment_status === 'completed');
+
+    // Filter bookings by date ranges for booking counts
     const last30DaysBookings = bookings.filter(
       b => new Date(b.created_at) >= last30Days
     );
 
-    // Revenue calculations (convert pence to pounds)
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.total / 100), 0);
-    const monthRevenue = thisMonthBookings.reduce((sum, b) => sum + (b.total / 100), 0);
-    const yearRevenue = thisYearBookings.reduce((sum, b) => sum + (b.total / 100), 0);
+    // Revenue calculations from backend (already in pence, convert to pounds)
+    const totalRevenue = revenueAnalytics ? revenueAnalytics.total_revenue / 100 : 0;
+    const monthRevenue = revenueAnalytics ? revenueAnalytics.month_revenue / 100 : 0;
+    const yearRevenue = revenueAnalytics ? revenueAnalytics.year_revenue / 100 : 0;
 
     // Booking statistics
     const totalBookings = bookings.length;
@@ -51,8 +46,8 @@ export const Analytics: React.FC = () => {
     const completedBookings = bookings.filter(b => b.status === 'completed').length;
     const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
 
-    // Average booking value
-    const avgBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+    // Average booking value from backend (completed payments only)
+    const avgBookingValue = revenueAnalytics ? revenueAnalytics.avg_booking_value / 100 : 0;
 
     // Unique customers (by email)
     const uniqueCustomers = new Set(bookings.map(b => b.email)).size;
@@ -66,9 +61,9 @@ export const Analytics: React.FC = () => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    // Revenue by cruise line
+    // Revenue by cruise line (completed payments only)
     const revenueByCruiseLine: Record<string, number> = {};
-    bookings.forEach(b => {
+    paidBookings.forEach(b => {
       revenueByCruiseLine[b.cruise_line] = (revenueByCruiseLine[b.cruise_line] || 0) + (b.total / 100);
     });
     const topRevenueLines = Object.entries(revenueByCruiseLine)
@@ -98,7 +93,7 @@ export const Analytics: React.FC = () => {
       avgDuration,
       last30DaysBookings: last30DaysBookings.length,
     };
-  }, [bookings]);
+  }, [bookings, revenueAnalytics]);
 
   const breadcrumbs = [
     { label: 'Overview' },
