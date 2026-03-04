@@ -390,6 +390,13 @@ export const ManageBooking: React.FC = () => {
 
   // Cancel Modal State
   const [isCancelOpen, setIsCancelOpen] = useState(false);
+  const [cancelState, setCancelState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [cancelResult, setCancelResult] = useState<{
+    message: string;
+    non_refundable?: boolean;
+    refund_amount?: number;
+    refund_issued?: boolean;
+  } | null>(null);
 
   // Receipt State
   const [isDownloading, setIsDownloading] = useState(false);
@@ -736,8 +743,19 @@ export const ManageBooking: React.FC = () => {
     }, 1500);
   };
 
+  const handleCloseCancelModal = () => {
+    setIsCancelOpen(false);
+    // Reset state after modal closes (with a small delay for animation)
+    setTimeout(() => {
+      setCancelState('idle');
+      setCancelResult(null);
+    }, 300);
+  };
+
   const handleCancelConfirm = async () => {
       if (!booking) return;
+
+      setCancelState('loading');
 
       try {
         const result = await cancelBookingInStore(booking.id, 'Cancelled by customer via manage booking page');
@@ -748,20 +766,28 @@ export const ManageBooking: React.FC = () => {
           setBooking(updatedBooking as any);
         }
 
-        setIsCancelOpen(false);
-
-        // Show success message with refund info
+        // Prepare success message
+        let message = '';
         if (result.non_refundable) {
-          alert(`Booking cancelled successfully. However, as per our cancellation policy, bookings cancelled within 48 hours of the scheduled drop-off time are non-refundable. You will receive a confirmation email shortly.`);
+          message = `Booking cancelled successfully. However, as per our cancellation policy, bookings cancelled within 48 hours of the scheduled drop-off time are non-refundable. You will receive a confirmation email shortly.`;
         } else if (result.refund_issued) {
-          alert(`Booking cancelled successfully! A refund of £${(result.refund_amount / 100).toFixed(2)} has been processed and will appear in your account within 5-10 business days. You will receive a confirmation email shortly.`);
+          message = `Booking cancelled successfully! A refund of £${(result.refund_amount / 100).toFixed(2)} has been processed and will appear in your account within 5-10 business days. You will receive a confirmation email shortly.`;
         } else {
-          alert('Booking cancelled successfully. You will receive a confirmation email shortly.');
+          message = 'Booking cancelled successfully. You will receive a confirmation email shortly.';
         }
+
+        setCancelResult({
+          message,
+          non_refundable: result.non_refundable,
+          refund_amount: result.refund_amount,
+          refund_issued: result.refund_issued,
+        });
+        setCancelState('success');
       } catch (error) {
         console.error('Error cancelling booking:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to cancel booking. Please try again or contact support.';
-        alert(errorMessage);
+        setCancelResult({ message: errorMessage });
+        setCancelState('error');
       }
   };
 
@@ -1832,38 +1858,115 @@ export const ManageBooking: React.FC = () => {
                 {/* Cancel Confirmation Modal */}
                 {isCancelOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-brand-dark/50 backdrop-blur-sm" onClick={() => setIsCancelOpen(false)}></div>
+                        <div className="absolute inset-0 bg-brand-dark/50 backdrop-blur-sm" onClick={cancelState === 'loading' ? undefined : handleCloseCancelModal}></div>
                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
                             <div className="p-6 text-center">
-                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <AlertTriangle size={32} />
-                                </div>
-                                <h2 className="text-xl font-bold text-brand-dark mb-2">Cancel Booking?</h2>
-                                <p className="text-gray-600 mb-6">
-                                    Are you sure you want to cancel booking <span className="font-bold">{booking?.booking_reference}</span>? This action cannot be undone.
-                                </p>
-                                
-                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6 text-left flex gap-3">
-                                    <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
-                                    <p className="text-sm text-red-800 font-medium">
-                                        Warning: Bookings cancelled within 48 hours of arrival are non-refundable according to our terms of service.
-                                    </p>
-                                </div>
+                                {/* Loading State */}
+                                {cancelState === 'loading' && (
+                                    <>
+                                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Loader2 size={32} className="animate-spin" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-brand-dark mb-2">Cancelling Booking...</h2>
+                                        <p className="text-gray-600">
+                                            Please wait while we process your cancellation request.
+                                        </p>
+                                    </>
+                                )}
 
-                                <div className="flex flex-col gap-2">
-                                    <button
-                                        onClick={handleCancelConfirm}
-                                        className="w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors cursor-pointer"
-                                    >
-                                        Yes, Cancel Booking
-                                    </button>
-                                    <button
-                                        onClick={() => setIsCancelOpen(false)}
-                                        className="w-full py-2 px-4 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-                                    >
-                                        No, Keep Booking
-                                    </button>
-                                </div>
+                                {/* Success State */}
+                                {cancelState === 'success' && cancelResult && (
+                                    <>
+                                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <CheckCircle size={32} />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-brand-dark mb-2">Booking Cancelled</h2>
+                                        <p className="text-gray-600 mb-6 whitespace-pre-line">
+                                            {cancelResult.message}
+                                        </p>
+
+                                        {cancelResult.refund_issued && (
+                                            <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-6 text-left">
+                                                <p className="text-sm text-green-800 font-medium">
+                                                    ✓ Refund Amount: £{((cancelResult.refund_amount || 0) / 100).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={handleCloseCancelModal}
+                                            className="w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors cursor-pointer"
+                                        >
+                                            Close
+                                        </button>
+                                    </>
+                                )}
+
+                                {/* Error State */}
+                                {cancelState === 'error' && cancelResult && (
+                                    <>
+                                        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <XCircle size={32} />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-brand-dark mb-2">Cancellation Failed</h2>
+                                        <p className="text-gray-600 mb-6">
+                                            {cancelResult.message}
+                                        </p>
+
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setCancelState('idle');
+                                                    setCancelResult(null);
+                                                }}
+                                                className="w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors cursor-pointer"
+                                            >
+                                                Try Again
+                                            </button>
+                                            <button
+                                                onClick={handleCloseCancelModal}
+                                                className="w-full py-2 px-4 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                                            >
+                                                Close
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Idle/Confirmation State */}
+                                {cancelState === 'idle' && (
+                                    <>
+                                        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <AlertTriangle size={32} />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-brand-dark mb-2">Cancel Booking?</h2>
+                                        <p className="text-gray-600 mb-6">
+                                            Are you sure you want to cancel booking <span className="font-bold">{booking?.booking_reference}</span>? This action cannot be undone.
+                                        </p>
+
+                                        <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-6 text-left flex gap-3">
+                                            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+                                            <p className="text-sm text-red-800 font-medium">
+                                                Warning: Bookings cancelled within 48 hours of arrival are non-refundable according to our terms of service.
+                                            </p>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                onClick={handleCancelConfirm}
+                                                className="w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors cursor-pointer"
+                                            >
+                                                Yes, Cancel Booking
+                                            </button>
+                                            <button
+                                                onClick={handleCloseCancelModal}
+                                                className="w-full py-2 px-4 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                                            >
+                                                No, Keep Booking
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

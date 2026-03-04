@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '../../../../components/admin/ui/button';
 import { Input } from '../../../../components/admin/ui/input';
 
 interface CancelBookingDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string) => Promise<void>;
   bookingReference: string;
 }
 
@@ -17,25 +17,41 @@ export const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
   bookingReference,
 }) => {
   const [reason, setReason] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
-    if (!reason.trim()) {
+  const handleConfirm = async () => {
+    if (!reason.trim() || isLoading) {
       return;
     }
-    onConfirm(reason);
-    setReason('');
+
+    setIsLoading(true);
+    try {
+      await onConfirm(reason);
+      setReason('');
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+    }
   };
 
   const handleClose = () => {
+    if (isLoading) return; // Prevent closing while loading
     setReason('');
+    setIsLoading(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      onClick={isLoading ? undefined : handleClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-lg max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -49,7 +65,8 @@ export const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 cursor-pointer"
+            disabled={isLoading}
+            className="text-gray-400 hover:text-gray-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-5 h-5" />
           </button>
@@ -63,6 +80,12 @@ export const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
             placeholder="Enter reason for cancellation"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && reason.trim() && !isLoading) {
+                handleConfirm();
+              }
+            }}
+            disabled={isLoading}
             className="w-full"
           />
           <p className="text-xs text-gray-500 mt-1">
@@ -75,6 +98,7 @@ export const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
           <Button
             variant="outline"
             onClick={handleClose}
+            disabled={isLoading}
             className="flex-1 cursor-pointer"
           >
             Cancel
@@ -82,10 +106,11 @@ export const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
           <Button
             variant="destructive"
             onClick={handleConfirm}
-            disabled={!reason.trim()}
+            disabled={!reason.trim() || isLoading}
             className="flex-1 cursor-pointer"
           >
-            Confirm Cancellation
+            {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isLoading ? 'Cancelling...' : 'Confirm Cancellation'}
           </Button>
         </div>
       </div>
