@@ -367,9 +367,10 @@ serve(async (req) => {
 
         // Get the refund amount
         const refundAmount = charge.amount_refunded;
+        const paymentIntentId = charge.payment_intent as string;
 
         // Update booking with refund information
-        const { error } = await supabase
+        const { error: bookingError } = await supabase
           .from('bookings')
           .update({
             payment_status: 'refunded',
@@ -379,12 +380,29 @@ serve(async (req) => {
           })
           .eq('stripe_charge_id', charge.id);
 
-        if (error) {
-          console.error('Error updating booking refund:', error);
-          throw error;
+        if (bookingError) {
+          console.error('Error updating booking refund:', bookingError);
+          throw bookingError;
         }
 
-        console.log('Booking refund recorded');
+        // Update payment record to refunded status
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .update({
+            status: 'refunded',
+            metadata: {
+              refund_amount: refundAmount,
+              refunded_at: new Date().toISOString(),
+            },
+          })
+          .eq('stripe_payment_intent_id', paymentIntentId);
+
+        if (paymentError) {
+          console.error('Error updating payment refund status:', paymentError);
+          // Don't throw - booking is already updated
+        }
+
+        console.log('Booking and payment refund recorded');
         break;
       }
 

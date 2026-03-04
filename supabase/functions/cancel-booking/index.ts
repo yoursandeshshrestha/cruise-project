@@ -175,6 +175,29 @@ serve(async (req) => {
       throw updateError;
     }
 
+    // Update payment record status if refund was processed
+    if (refundResult) {
+      const { error: paymentUpdateError } = await supabase
+        .from('payments')
+        .update({
+          status: 'refunded',
+          metadata: {
+            refund_amount: refundAmountProcessed,
+            refunded_at: new Date().toISOString(),
+            cancellation_reason: reason,
+          },
+        })
+        .eq('booking_id', booking_id)
+        .eq('status', 'completed'); // Only update completed payments
+
+      if (paymentUpdateError) {
+        console.error('Error updating payment status:', paymentUpdateError);
+        // Don't fail the entire operation - booking is already updated
+      } else {
+        console.log('Payment status updated to refunded');
+      }
+    }
+
     // Send cancellation email
     try {
       const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-cancellation-email`, {

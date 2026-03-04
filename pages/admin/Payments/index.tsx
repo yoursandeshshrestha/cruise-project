@@ -62,8 +62,10 @@ export const Payments: React.FC = () => {
       if (error) throw error;
       setPayments((data || []) as Payment[]);
 
-      // Calculate stats
-      const completedPayments = ((data || []) as Payment[]).filter((p: Payment) => p.status === 'completed');
+      // Calculate stats - exclude refunded and cancelled payments from revenue
+      const completedPayments = ((data || []) as Payment[]).filter(
+        (p: Payment) => p.status === 'completed'
+      );
       const totalRevenue = completedPayments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
       const totalTransactions = completedPayments.length;
       const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
