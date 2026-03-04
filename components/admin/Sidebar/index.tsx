@@ -1,9 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../../../lib/utils';
 import { useAdminSidebar } from '../../../contexts/AdminSidebarContext';
 import { useAuthStore } from '../../../stores/authStore';
 import { useNotificationsStore } from '../../../stores/notificationsStore';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import { Button } from '../ui/button';
 
 interface NavItem {
   title: string;
@@ -127,6 +136,7 @@ export const Sidebar: React.FC = () => {
   const { isCollapsed } = useAdminSidebar();
   const { signOut } = useAuthStore();
   const { arrivalsCount, newContactSubmissionsCount, initialize, cleanup } = useNotificationsStore();
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
 
   useEffect(() => {
     initialize();
@@ -220,8 +230,8 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 px-1">
-        <div className="flex flex-col gap-2">
+      <div className="flex-1 overflow-y-auto px-1">
+        <div className="flex flex-col gap-2 py-2">
           {navGroups.map((group, groupIndex) => (
             <div key={groupIndex}>
               {!isCollapsed && (
@@ -282,25 +292,52 @@ export const Sidebar: React.FC = () => {
 
       {/* Footer - Actions */}
       {!isCollapsed && (
-        <div className="mt-auto p-2">
-          <div className="flex flex-col gap-1">
+        <div className="mt-auto shrink-0 border-t border-sidebar-border p-2">
+          <div className="flex items-center justify-center gap-3 text-xs text-sidebar-foreground/70">
             <Link
               to="/"
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
+              className="hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
             >
-              <img src="/icons/home.svg" alt="Home" className="size-4" />
-              <span>Home</span>
+              Home
             </Link>
+            <span className="text-sidebar-border">|</span>
             <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors cursor-pointer w-full text-left"
+              onClick={() => setShowSignOutDialog(true)}
+              className="hover:text-sidebar-accent-foreground transition-colors cursor-pointer"
             >
-              <img src="/icons/logout.svg" alt="Logout" className="size-4" />
-              <span>Logout</span>
+              Sign out
             </button>
           </div>
         </div>
       )}
+
+      {/* Sign Out Confirmation Dialog */}
+      <Dialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to sign out of your account?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSignOutDialog(false)}
+              className="cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleSignOut}
+              className="cursor-pointer"
+            >
+              Sign out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
