@@ -82,6 +82,19 @@ export const FeaturesTab: React.FC<FeaturesTabProps> = ({ formData, setFormData 
           />
         </div>
 
+        {/* Minimum Days Required */}
+        <div className="flex items-center justify-between p-4 border rounded">
+          <div>
+            <div className="font-medium">Minimum 7 Days Booking</div>
+            <div className="text-sm text-muted-foreground">Require minimum 7 days for all bookings</div>
+          </div>
+          <Switch
+            checked={formData.minimumDaysRequired}
+            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, minimumDaysRequired: checked }))}
+            className="cursor-pointer"
+          />
+        </div>
+
         {/* Cancellation Policy */}
         <div className="p-4 border rounded">
           <div className="flex items-center justify-between mb-3">

@@ -22,6 +22,7 @@ export interface SettingsFormData {
   smsNotificationsEnabled: boolean;
   showCancellationPolicy: boolean;
   cancellationPolicyText: string;
+  minimumDaysRequired: boolean;
 }
 
 export const defaultFormData: SettingsFormData = {
@@ -42,4 +43,5 @@ export const defaultFormData: SettingsFormData = {
   smsNotificationsEnabled: false,
   showCancellationPolicy: true,
   cancellationPolicyText: '',
+  minimumDaysRequired: true,
 };

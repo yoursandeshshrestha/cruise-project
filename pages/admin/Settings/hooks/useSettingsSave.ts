@@ -52,6 +52,7 @@ export const useSettingsSave = ({ updateGroup }: UseSettingsSaveProps) => {
           promo_codes_enabled: formData.promoCodesEnabled,
           show_cancellation_policy: formData.showCancellationPolicy,
           cancellation_policy_text: formData.cancellationPolicyText,
+          minimum_days_required: formData.minimumDaysRequired,
         };
         await updateGroup('features', featuresData);
 

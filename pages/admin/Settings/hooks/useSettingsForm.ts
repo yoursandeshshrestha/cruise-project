@@ -36,6 +36,7 @@ export const useSettingsForm = ({
         smsNotificationsEnabled: getSetting<boolean>('notifications', 'sms_notifications_enabled', false) ?? false,
         showCancellationPolicy: getSetting<boolean>('features', 'show_cancellation_policy', true) ?? true,
         cancellationPolicyText: getSetting<string>('features', 'cancellation_policy_text', 'Free cancellation up to 48 hours before arrival.') || '',
+        minimumDaysRequired: getSetting<boolean>('features', 'minimum_days_required', true) ?? true,
       };
       setFormData(data);
       setOriginalFormData(data);
