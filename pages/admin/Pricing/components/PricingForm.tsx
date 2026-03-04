@@ -123,6 +123,80 @@ export const PricingForm: React.FC<PricingFormProps> = ({
               </p>
             </div>
 
+            {/* Weekly Block Package Discounts */}
+            <div className="space-y-3 p-4 border border-slate-200 rounded-lg bg-slate-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">Weekly Block Package Discounts</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Incentivize longer bookings with percentage discounts on total parking price
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="weekly_discount_1wk" className="cursor-pointer">1 Week (7-13 days) %</Label>
+                  <Input
+                    id="weekly_discount_1wk"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.weekly_discount_1wk}
+                    onChange={(e) => setFormData({ ...formData, weekly_discount_1wk: e.target.value })}
+                    placeholder="0 (e.g., 5 for 5%)"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weekly_discount_2wk" className="cursor-pointer">2 Weeks (14-20 days) %</Label>
+                  <Input
+                    id="weekly_discount_2wk"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.weekly_discount_2wk}
+                    onChange={(e) => setFormData({ ...formData, weekly_discount_2wk: e.target.value })}
+                    placeholder="0 (e.g., 10 for 10%)"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weekly_discount_3wk" className="cursor-pointer">3 Weeks (21-27 days) %</Label>
+                  <Input
+                    id="weekly_discount_3wk"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.weekly_discount_3wk}
+                    onChange={(e) => setFormData({ ...formData, weekly_discount_3wk: e.target.value })}
+                    placeholder="0 (e.g., 15 for 15%)"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weekly_discount_4wk" className="cursor-pointer">4+ Weeks (28+ days) %</Label>
+                  <Input
+                    id="weekly_discount_4wk"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.weekly_discount_4wk}
+                    onChange={(e) => setFormData({ ...formData, weekly_discount_4wk: e.target.value })}
+                    placeholder="0 (e.g., 20 for 20%)"
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Set to 0 to disable any tier. Discount applies to total parking price only (before VAT).
+              </p>
+            </div>
+
             {/* Pricing Example */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="text-sm font-medium text-gray-900 mb-2">Pricing Calculation</div>

@@ -13,4 +13,8 @@ export interface PricingFormData {
   is_active: boolean;
   priority: 1 | 2;
   reason?: string;
+  weekly_discount_1wk: string;
+  weekly_discount_2wk: string;
+  weekly_discount_3wk: string;
+  weekly_discount_4wk: string;
 }

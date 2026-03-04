@@ -11,6 +11,10 @@ const INITIAL_FORM_STATE: PricingFormData = {
   is_active: true,
   priority: 1, // Default to custom pricing
   reason: '',
+  weekly_discount_1wk: '0',
+  weekly_discount_2wk: '0',
+  weekly_discount_3wk: '0',
+  weekly_discount_4wk: '0',
 };
 
 export const usePricingForm = () => {
@@ -30,6 +34,10 @@ export const usePricingForm = () => {
         is_active: pricingRule.is_active,
         priority: (pricingRule.priority ?? 1) as 1 | 2,
         reason: pricingRule.reason ?? '',
+        weekly_discount_1wk: (pricingRule.weekly_discount_1wk ?? 0).toString(),
+        weekly_discount_2wk: (pricingRule.weekly_discount_2wk ?? 0).toString(),
+        weekly_discount_3wk: (pricingRule.weekly_discount_3wk ?? 0).toString(),
+        weekly_discount_4wk: (pricingRule.weekly_discount_4wk ?? 0).toString(),
       });
     } else {
       setFormData(INITIAL_FORM_STATE);

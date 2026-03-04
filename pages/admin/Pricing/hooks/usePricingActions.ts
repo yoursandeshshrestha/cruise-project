@@ -41,6 +41,21 @@ export const usePricingActions = ({
       return 'Please enter a valid van multiplier between 1 and 5';
     }
 
+    // Validate weekly discounts
+    const weeklyDiscounts = [
+      { value: formData.weekly_discount_1wk, label: '1 Week' },
+      { value: formData.weekly_discount_2wk, label: '2 Weeks' },
+      { value: formData.weekly_discount_3wk, label: '3 Weeks' },
+      { value: formData.weekly_discount_4wk, label: '4+ Weeks' },
+    ];
+
+    for (const discount of weeklyDiscounts) {
+      const value = parseFloat(discount.value);
+      if (isNaN(value) || value < 0 || value > 100) {
+        return `Please enter a valid ${discount.label} discount between 0 and 100`;
+      }
+    }
+
     // Custom pricing (priority 1) requires dates
     if (formData.priority === 1) {
       if (!formData.start_date) {
@@ -82,6 +97,10 @@ export const usePricingActions = ({
         priority: formData.priority,
         reason: formData.reason?.trim() || null,
         display_order: formData.id ? undefined : pricingRulesCount + 1,
+        weekly_discount_1wk: parseFloat(formData.weekly_discount_1wk),
+        weekly_discount_2wk: parseFloat(formData.weekly_discount_2wk),
+        weekly_discount_3wk: parseFloat(formData.weekly_discount_3wk),
+        weekly_discount_4wk: parseFloat(formData.weekly_discount_4wk),
       };
 
       if (formData.id) {
