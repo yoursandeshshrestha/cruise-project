@@ -143,42 +143,42 @@ export const BookingFlow: React.FC = () => {
     <div className="space-y-6 animate-in slide-in-from-right duration-300">
       <h2 className="text-2xl font-bold text-brand-dark">Trip Details</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Input 
-          label="Drop Off Date" 
-          type="date" 
+        <Input
+          label="Drop Off Date"
+          type="date"
           min={today}
-          value={booking.dropOffDate} 
+          value={booking.dropOffDate}
           onChange={e => updateBooking('dropOffDate', e.target.value)}
         />
-        <Select 
-          label="Drop Off Time (approx)" 
+        <Select
+          label="Drop Off Time (approx)"
           options={['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00'].map(t => ({ value: t, label: t }))}
           value={booking.dropOffTime}
           onChange={e => updateBooking('dropOffTime', e.target.value)}
         />
-        <Input 
-          label="Return Date" 
-          type="date" 
+        <Input
+          label="Return Date"
+          type="date"
           min={booking.dropOffDate || today}
-          value={booking.returnDate} 
+          value={booking.returnDate}
           onChange={e => updateBooking('returnDate', e.target.value)}
         />
-        <Select 
-          label="Return Time (approx)" 
+        <Select
+          label="Return Time (approx)"
           options={['06:00','07:00','08:00','09:00','10:00','11:00'].map(t => ({ value: t, label: t }))}
           value={booking.returnTime}
           onChange={e => updateBooking('returnTime', e.target.value)}
         />
-        <Select 
+        <Select
           label="Cruise Line"
           options={CRUISE_LINES.map(c => ({ value: c.name, label: c.name }))}
           value={booking.cruiseLine}
           onChange={e => updateBooking('cruiseLine', e.target.value)}
         />
-        <Select 
+        <Select
           label="Ship Name"
           options={
-            booking.cruiseLine 
+            booking.cruiseLine
               ? (CRUISE_LINES.find(c => c.name === booking.cruiseLine)?.ships.map(s => ({ value: s, label: s })) || [])
               : []
           }
@@ -186,7 +186,7 @@ export const BookingFlow: React.FC = () => {
           onChange={e => updateBooking('shipName', e.target.value)}
           disabled={!booking.cruiseLine}
         />
-        <Select 
+        <Select
           label="Passengers"
           options={[1,2,3,4,5,6,7,8].map(n => ({ value: n.toString(), label: n.toString() }))}
           value={booking.passengers.toString()}
