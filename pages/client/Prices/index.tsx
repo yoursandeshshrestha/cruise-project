@@ -6,7 +6,7 @@ import { Check, Zap, Droplets, Sparkles, Clock, Calendar, Truck } from 'lucide-r
 import { useAddOnsStore } from '../../../stores/addOnsStore';
 import { useBookingCartStore } from '../../../stores/bookingCartStore';
 import { usePricingStore } from '../../../stores/pricingStore';
-import { FIRST_DAY_RATE, ADDITIONAL_DAY_RATE } from '../../../constants';
+import { WeeklyDiscountInfo } from '../BookingFlow/components/WeeklyDiscountInfo';
 
 export const Prices: React.FC = () => {
   const navigate = useNavigate();
@@ -33,22 +33,24 @@ export const Prices: React.FC = () => {
   const pricePerDay = standardPricing?.price_per_day ?? 0;
   const vanMultiplier = standardPricing?.van_multiplier ?? 0;
 
-  // Flat rate pricing: price per day for cars, total car price × multiplier (rounded) for vans
-  const calculateCarPrice = (days: number) => pricePerDay * days;
-  const calculateVanPrice = (days: number) => Math.round(calculateCarPrice(days) * vanMultiplier);
+  // Helper function to get discount percentage for standard pricing
+  const getStandardDiscountPercentage = (days: number): number => {
+    if (!standardPricing) return 0;
+    if (days >= 28 && standardPricing.weekly_discount_4wk > 0) return standardPricing.weekly_discount_4wk;
+    if (days >= 21 && standardPricing.weekly_discount_3wk > 0) return standardPricing.weekly_discount_3wk;
+    if (days >= 14 && standardPricing.weekly_discount_2wk > 0) return standardPricing.weekly_discount_2wk;
+    if (days >= 7 && standardPricing.weekly_discount_1wk > 0) return standardPricing.weekly_discount_1wk;
+    return 0;
+  };
 
-  const pricingTiers = [
-    { days: 1, carPrice: calculateCarPrice(1), label: '1 Day' },
-    { days: 2, carPrice: calculateCarPrice(2), label: '2 Days' },
-    { days: 3, carPrice: calculateCarPrice(3), label: '3 Days' },
-    { days: 4, carPrice: calculateCarPrice(4), label: '4 Days' },
-    { days: 5, carPrice: calculateCarPrice(5), label: '5 Days' },
-    { days: 6, carPrice: calculateCarPrice(6), label: '6 Days' },
-    { days: 7, carPrice: calculateCarPrice(7), label: '1 Week' },
-    { days: 14, carPrice: calculateCarPrice(14), label: '2 Weeks' },
-    { days: 21, carPrice: calculateCarPrice(21), label: '3 Weeks' },
-    { days: 28, carPrice: calculateCarPrice(28), label: '4 Weeks' },
-  ];
+  // Calculate price with weekly discount applied
+  const calculateCarPrice = (days: number) => {
+    const basePrice = pricePerDay * days;
+    const discountPercentage = getStandardDiscountPercentage(days);
+    return basePrice * (1 - discountPercentage / 100);
+  };
+
+  const calculateVanPrice = (days: number) => Math.round(calculateCarPrice(days) * vanMultiplier);
 
   const getIconComponent = (slug: string) => {
     const iconMap: Record<string, React.ReactNode> = {
@@ -74,6 +76,9 @@ export const Prices: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-16">
+        {/* Weekly Discount Information */}
+        <WeeklyDiscountInfo />
+
         {/* Display all active pricing rules */}
         {activePricingRules.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-medium border border-gray-100 p-8 mb-20">
@@ -86,20 +91,34 @@ export const Prices: React.FC = () => {
               const rulePricePerDay = pricingRule.price_per_day ?? 0;
               const ruleVanMultiplier = pricingRule.van_multiplier ?? 0;
 
-              const calculateRuleCarPrice = (days: number) => rulePricePerDay * days;
+              // Helper function to get discount percentage based on days
+              const getDiscountPercentage = (days: number): number => {
+                if (days >= 28 && pricingRule.weekly_discount_4wk > 0) return pricingRule.weekly_discount_4wk;
+                if (days >= 21 && pricingRule.weekly_discount_3wk > 0) return pricingRule.weekly_discount_3wk;
+                if (days >= 14 && pricingRule.weekly_discount_2wk > 0) return pricingRule.weekly_discount_2wk;
+                if (days >= 7 && pricingRule.weekly_discount_1wk > 0) return pricingRule.weekly_discount_1wk;
+                return 0;
+              };
+
+              const calculateRuleCarPrice = (days: number) => {
+                const basePrice = rulePricePerDay * days;
+                const discountPercentage = getDiscountPercentage(days);
+                return basePrice * (1 - discountPercentage / 100);
+              };
+
               const calculateRuleVanPrice = (days: number) => Math.round(calculateRuleCarPrice(days) * ruleVanMultiplier);
 
               const rulePricingTiers = [
-                { days: 1, carPrice: calculateRuleCarPrice(1), label: '1 Day' },
-                { days: 2, carPrice: calculateRuleCarPrice(2), label: '2 Days' },
-                { days: 3, carPrice: calculateRuleCarPrice(3), label: '3 Days' },
-                { days: 4, carPrice: calculateRuleCarPrice(4), label: '4 Days' },
-                { days: 5, carPrice: calculateRuleCarPrice(5), label: '5 Days' },
-                { days: 6, carPrice: calculateRuleCarPrice(6), label: '6 Days' },
-                { days: 7, carPrice: calculateRuleCarPrice(7), label: '1 Week' },
-                { days: 14, carPrice: calculateRuleCarPrice(14), label: '2 Weeks' },
-                { days: 21, carPrice: calculateRuleCarPrice(21), label: '3 Weeks' },
-                { days: 28, carPrice: calculateRuleCarPrice(28), label: '4 Weeks' },
+                { days: 1, carPrice: calculateRuleCarPrice(1), label: '1 Day', discount: getDiscountPercentage(1) },
+                { days: 2, carPrice: calculateRuleCarPrice(2), label: '2 Days', discount: getDiscountPercentage(2) },
+                { days: 3, carPrice: calculateRuleCarPrice(3), label: '3 Days', discount: getDiscountPercentage(3) },
+                { days: 4, carPrice: calculateRuleCarPrice(4), label: '4 Days', discount: getDiscountPercentage(4) },
+                { days: 5, carPrice: calculateRuleCarPrice(5), label: '5 Days', discount: getDiscountPercentage(5) },
+                { days: 6, carPrice: calculateRuleCarPrice(6), label: '6 Days', discount: getDiscountPercentage(6) },
+                { days: 7, carPrice: calculateRuleCarPrice(7), label: '1 Week', discount: getDiscountPercentage(7) },
+                { days: 14, carPrice: calculateRuleCarPrice(14), label: '2 Weeks', discount: getDiscountPercentage(14) },
+                { days: 21, carPrice: calculateRuleCarPrice(21), label: '3 Weeks', discount: getDiscountPercentage(21) },
+                { days: 28, carPrice: calculateRuleCarPrice(28), label: '4 Weeks', discount: getDiscountPercentage(28) },
               ];
 
               return (
@@ -154,12 +173,38 @@ export const Prices: React.FC = () => {
                           <tbody className="divide-y divide-gray-100">
                             {rulePricingTiers.map((tier) => {
                               const vanPrice = calculateRuleVanPrice(tier.days);
+                              const baseCarPrice = rulePricePerDay * tier.days;
+                              const baseVanPrice = Math.round(baseCarPrice * ruleVanMultiplier);
 
                               return (
                                 <tr key={tier.days} className="hover:bg-gray-50">
                                   <td className="p-3 font-medium text-gray-700">{tier.label}</td>
-                                  <td className="p-3 text-right font-bold text-brand-dark">£{tier.carPrice.toFixed(2)}</td>
-                                  <td className="p-3 text-right font-bold text-amber-700">£{vanPrice.toFixed(2)}</td>
+                                  <td className="p-3 text-right">
+                                    {tier.discount > 0 ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs text-gray-400 line-through">£{baseCarPrice.toFixed(2)}</span>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-xs font-semibold text-green-600">-{tier.discount}%</span>
+                                          <span className="font-bold text-brand-dark">£{tier.carPrice.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="font-bold text-brand-dark">£{tier.carPrice.toFixed(2)}</span>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    {tier.discount > 0 ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs text-gray-400 line-through">£{baseVanPrice.toFixed(2)}</span>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-xs font-semibold text-green-600">-{tier.discount}%</span>
+                                          <span className="font-bold text-amber-700">£{vanPrice.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="font-bold text-amber-700">£{vanPrice.toFixed(2)}</span>
+                                    )}
+                                  </td>
                                 </tr>
                               );
                             })}
