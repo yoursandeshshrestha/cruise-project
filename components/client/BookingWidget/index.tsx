@@ -120,7 +120,7 @@ export const BookingWidget: React.FC = () => {
             label="Cruise Line"
             placeholder="Select Line..."
             icon={<Ship size={16} className="text-primary" />}
-            options={cruiseLines.map(line => ({ value: line.name, label: line.name }))}
+            options={cruiseLines.filter(line => line && line.name).map(line => ({ value: line.name, label: line.name }))}
             value={cruiseLine}
             onChange={(value) => setCruiseLine(value)}
           />

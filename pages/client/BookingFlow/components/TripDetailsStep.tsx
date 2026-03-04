@@ -81,7 +81,7 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
           label="Cruise Line"
           placeholder="Select Cruise Line..."
           icon={<Ship size={16} className="text-primary" />}
-          options={cruiseLines.map(c => ({ value: c.name, label: c.name }))}
+          options={cruiseLines.filter(c => c && c.name).map(c => ({ value: c.name, label: c.name }))}
           value={booking.cruiseLine}
           onChange={value => {
             updateBooking('cruiseLine', value);
@@ -95,7 +95,7 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
           icon={<Ship size={16} className="text-primary" />}
           options={
             booking.cruiseLine
-              ? (cruiseLines.find(c => c.name === booking.cruiseLine)?.ships.map(s => ({ value: s, label: s })) || [])
+              ? (cruiseLines.find(c => c && c.name === booking.cruiseLine)?.ships?.filter(s => s).map(s => ({ value: s, label: s })) || [])
               : []
           }
           value={booking.shipName}
@@ -107,7 +107,7 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
           label="Cruise Terminal"
           placeholder="Select Terminal..."
           icon={<MapPin size={16} className="text-primary" />}
-          options={terminals.map(t => ({ value: t.name, label: t.name }))}
+          options={terminals.filter(t => t && t.name).map(t => ({ value: t.name, label: t.name }))}
           value={booking.terminal || ''}
           onChange={value => updateBooking('terminal', value)}
           required

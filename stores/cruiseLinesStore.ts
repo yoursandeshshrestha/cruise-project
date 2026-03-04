@@ -38,7 +38,9 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      set({ cruiseLines: (data || []) as unknown as CruiseLine[], loading: false, initialized: true });
+      // Filter out any null/undefined entries to prevent runtime errors
+      const validCruiseLines = (data || []).filter(line => line && line.name) as unknown as CruiseLine[];
+      set({ cruiseLines: validCruiseLines, loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cruise lines';
       console.error('[CruiseLinesStore] Error:', errorMessage);
@@ -61,7 +63,9 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      set({ cruiseLines: (data || []) as unknown as CruiseLine[], loading: false, initialized: true });
+      // Filter out any null/undefined entries to prevent runtime errors
+      const validCruiseLines = (data || []).filter(line => line && line.name) as unknown as CruiseLine[];
+      set({ cruiseLines: validCruiseLines, loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cruise lines';
       console.error('[CruiseLinesStore] Error:', errorMessage);
