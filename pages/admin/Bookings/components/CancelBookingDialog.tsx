@@ -66,7 +66,7 @@ export const CancelBookingDialog: React.FC<CancelBookingDialogProps> = ({
             className="w-full"
           />
           <p className="text-xs text-gray-500 mt-1">
-            This will permanently cancel the booking and cannot be undone.
+            This will cancel the booking, process a refund (if payment was completed), and send a confirmation email to the customer.
           </p>
         </div>
 

@@ -128,17 +128,43 @@ export const useBookingActions = (
 
   const handleCancelBooking = async (bookingId: string, reason: string) => {
     try {
-      await updateBooking(bookingId, {
-        status: 'cancelled',
-        cancellation_reason: reason,
-        cancelled_at: new Date().toISOString(),
+      // Call the cancel-booking edge function which handles refund and email
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not configured');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/cancel-booking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          booking_id: bookingId,
+          reason: reason,
+        }),
       });
 
-      toast.success('Booking cancelled successfully');
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to cancel booking');
+      }
+
+      // Show success message with refund info
+      if (result.non_refundable) {
+        toast.success('Booking cancelled successfully. Non-refundable (within 48hrs). Customer will receive confirmation email.');
+      } else if (result.refund_issued) {
+        toast.success(`Booking cancelled successfully! Refund of £${(result.refund_amount / 100).toFixed(2)} processed. Customer will receive confirmation email.`);
+      } else {
+        toast.success('Booking cancelled successfully. Customer will receive confirmation email.');
+      }
+
       setIsCancelDialogOpen(false);
       fetchBookings();
     } catch (error) {
-      toast.error('Failed to cancel booking');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to cancel booking';
+      toast.error(errorMessage);
       console.error('Error cancelling booking:', error);
     }
   };
