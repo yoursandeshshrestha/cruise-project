@@ -14,8 +14,7 @@ export const useSettingsSave = ({ updateGroup }: UseSettingsSaveProps) => {
     formData: SettingsFormData,
     onSuccess: () => void
   ) => {
-    console.log('[Settings] Save clicked, activeTab:', activeTab);
-    console.log('[Settings] Current formData:', formData);
+   
     setIsSaving(true);
 
     try {
@@ -33,7 +32,7 @@ export const useSettingsSave = ({ updateGroup }: UseSettingsSaveProps) => {
           buffer_spaces: parseInt(formData.bufferSpaces),
           amendment_extension_fee: amendmentFee,
         };
-        console.log('[Settings] Saving capacity:', capacityData);
+
         await updateGroup('capacity', capacityData);
 
         toast.success('General settings saved');
@@ -44,7 +43,6 @@ export const useSettingsSave = ({ updateGroup }: UseSettingsSaveProps) => {
           company_phone: formData.companyPhone,
           company_address: formData.companyAddress,
         };
-        console.log('[Settings] Saving business:', businessData);
         await updateGroup('business', businessData);
         toast.success('Business info saved');
       } else {
@@ -55,14 +53,12 @@ export const useSettingsSave = ({ updateGroup }: UseSettingsSaveProps) => {
           show_cancellation_policy: formData.showCancellationPolicy,
           cancellation_policy_text: formData.cancellationPolicyText,
         };
-        console.log('[Settings] Saving features:', featuresData);
         await updateGroup('features', featuresData);
 
         const notificationsData = {
           email_notifications_enabled: formData.emailNotificationsEnabled,
           sms_notifications_enabled: formData.smsNotificationsEnabled,
         };
-        console.log('[Settings] Saving notifications:', notificationsData);
         await updateGroup('notifications', notificationsData);
         toast.success('Features saved');
       }
