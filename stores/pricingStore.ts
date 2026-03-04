@@ -29,7 +29,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   error: null,
 
   fetchPricingRules: async () => {
-    console.log('[PricingStore] Fetching pricing rules...');
     set({ loading: true, error: null });
 
     try {
@@ -43,7 +42,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PricingStore] Loaded', data?.length || 0, 'pricing rules');
       set({ pricingRules: data || [], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch pricing rules';
@@ -53,7 +51,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   },
 
   fetchActivePricingRule: async () => {
-    console.log('[PricingStore] Fetching active pricing rule...');
     set({ loading: true, error: null });
 
     try {
@@ -70,7 +67,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PricingStore] Active pricing rule:', data);
       set({ activePricingRule: data, loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch active pricing rule';
@@ -125,7 +121,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   },
 
   createPricingRule: async (data: PricingRuleInsert) => {
-    console.log('[PricingStore] Creating pricing rule:', data.name);
     set({ error: null });
 
     try {
@@ -155,7 +150,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PricingStore] Created pricing rule:', created);
       set(state => ({
         pricingRules: [...state.pricingRules, created]
       }));
@@ -168,7 +162,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   },
 
   updatePricingRule: async (id: string, data: PricingRuleUpdate) => {
-    console.log('[PricingStore] Updating pricing rule:', id);
     set({ error: null });
 
     try {
@@ -184,7 +177,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PricingStore] Updated pricing rule:', updated);
       set(state => ({
         pricingRules: state.pricingRules.map(pr =>
           pr.id === id ? updated : pr
@@ -201,7 +193,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   },
 
   deletePricingRule: async (id: string) => {
-    console.log('[PricingStore] Deleting pricing rule:', id);
     set({ error: null });
 
     try {
@@ -215,7 +206,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PricingStore] Deleted pricing rule:', id);
       set(state => ({
         pricingRules: state.pricingRules.filter(pr => pr.id !== id),
         // Clear active pricing rule if it was deleted
@@ -230,7 +220,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
   },
 
   reorderPricingRules: async (items: { id: string; display_order: number }[]) => {
-    console.log('[PricingStore] Reordering pricing rules');
     set({ error: null });
 
     try {
@@ -243,8 +232,6 @@ export const usePricingStore = create<PricingState>((set, get) => ({
       );
 
       await Promise.all(updates);
-
-      console.log('[PricingStore] Reordered pricing rules');
 
       // Update the local state with new order
       set(state => ({

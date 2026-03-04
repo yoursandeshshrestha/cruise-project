@@ -12,7 +12,7 @@ export function AdminSidebarProvider({ children }: { children: ReactNode }) {
 
   const toggleSidebar = () => {
     setIsCollapsed((prev) => !prev);
-    console.log('Sidebar toggled, isCollapsed:', !isCollapsed); // Debug log
+  
   };
 
   return (

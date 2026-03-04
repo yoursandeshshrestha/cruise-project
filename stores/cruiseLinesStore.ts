@@ -25,7 +25,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
   error: null,
 
   fetchCruiseLines: async () => {
-    console.log('[CruiseLinesStore] Fetching cruise lines...');
     set({ loading: true, error: null });
 
     try {
@@ -39,7 +38,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[CruiseLinesStore] Loaded', data?.length || 0, 'cruise lines');
       set({ cruiseLines: (data || []) as unknown as CruiseLine[], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cruise lines';
@@ -49,7 +47,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
   },
 
   fetchActiveCruiseLines: async () => {
-    console.log('[CruiseLinesStore] Fetching active cruise lines for public...');
     set({ loading: true, error: null });
 
     try {
@@ -64,7 +61,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[CruiseLinesStore] Loaded', data?.length || 0, 'active cruise lines');
       set({ cruiseLines: (data || []) as unknown as CruiseLine[], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cruise lines';
@@ -74,7 +70,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
   },
 
   createCruiseLine: async (name: string, ships: string[]) => {
-    console.log('[CruiseLinesStore] Creating cruise line:', name);
     set({ error: null });
 
     try {
@@ -106,7 +101,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[CruiseLinesStore] Created cruise line:', data);
       set(state => ({
         cruiseLines: [...state.cruiseLines, data as unknown as CruiseLine]
       }));
@@ -119,7 +113,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
   },
 
   updateCruiseLine: async (id: string, data: CruiseLineUpdate) => {
-    console.log('[CruiseLinesStore] Updating cruise line:', id);
     set({ error: null });
 
     try {
@@ -139,7 +132,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[CruiseLinesStore] Updated cruise line:', updated);
       set(state => ({
         cruiseLines: state.cruiseLines.map(cl =>
           cl.id === id ? updated as unknown as CruiseLine : cl
@@ -154,7 +146,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
   },
 
   deleteCruiseLine: async (id: string) => {
-    console.log('[CruiseLinesStore] Deleting cruise line:', id);
     set({ error: null });
 
     try {
@@ -168,7 +159,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[CruiseLinesStore] Deleted cruise line:', id);
       set(state => ({
         cruiseLines: state.cruiseLines.filter(cl => cl.id !== id)
       }));
@@ -181,7 +171,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
   },
 
   reorderCruiseLines: async (items: { id: string; display_order: number }[]) => {
-    console.log('[CruiseLinesStore] Reordering cruise lines');
     set({ error: null });
 
     try {
@@ -195,7 +184,6 @@ export const useCruiseLinesStore = create<CruiseLinesState>((set, get) => ({
 
       await Promise.all(updates);
 
-      console.log('[CruiseLinesStore] Reordered cruise lines');
 
       // Update the local state with new order
       set(state => ({

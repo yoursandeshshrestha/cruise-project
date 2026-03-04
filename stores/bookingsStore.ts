@@ -63,7 +63,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   fetchStats: async () => {
-    console.log('[BookingsStore] Fetching stats...');
 
     try {
       const { data, error } = await supabase
@@ -81,7 +80,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
         cancelled: data?.filter(b => b.status === 'cancelled').length || 0,
       };
 
-      console.log('[BookingsStore] Fetched stats:', stats);
       set({ stats });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stats';
@@ -90,7 +88,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   fetchBookings: async (page = 0, limit = 50, filters?: { search?: string; status?: string; showPending?: boolean; date?: string }) => {
-    console.log('[BookingsStore] Fetching bookings...', { page, limit, filters });
     set({ loading: true, error: null });
 
     try {
@@ -144,7 +141,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[BookingsStore] Fetched bookings:', data?.length || 0, 'total:', count);
 
       const newBookings = data || [];
       const hasMore = count ? from + newBookings.length < count : false;
@@ -165,7 +161,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   fetchBookingByReference: async (reference: string) => {
-    console.log('[BookingsStore] Fetching booking by reference:', reference);
     set({ loading: true, error: null });
 
     try {
@@ -177,7 +172,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[BookingsStore] Fetched booking:', data);
       set({ currentBooking: data as unknown as Booking, loading: false });
       return data as unknown as Booking;
     } catch (error) {
@@ -189,7 +183,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   fetchBookingsByEmail: async (email: string) => {
-    console.log('[BookingsStore] Fetching bookings for email:', email);
     set({ loading: true, error: null });
 
     try {
@@ -201,7 +194,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[BookingsStore] Fetched bookings for email:', data?.length || 0);
       set({ bookings: (data || []) as unknown as Booking[], loading: false });
       return (data || []) as unknown as Booking[];
     } catch (error) {
@@ -213,7 +205,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   createBooking: async (bookingData: BookingInsert) => {
-    console.log('[BookingsStore] Creating booking...');
     set({ loading: true, error: null });
 
     try {
@@ -225,7 +216,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[BookingsStore] Booking created:', data);
 
       // Add to local state
       set(state => ({
@@ -244,7 +234,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   updateBooking: async (id: string, updates: Partial<Database['public']['Tables']['bookings']['Update']>) => {
-    console.log('[BookingsStore] Updating booking:', id);
     set({ error: null });
 
     try {
@@ -257,7 +246,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[BookingsStore] Booking updated:', updated);
 
       // Update local state with the full updated record from database
       set(state => ({
@@ -274,7 +262,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   },
 
   cancelBooking: async (id: string, reason: string) => {
-    console.log('[BookingsStore] Cancelling booking:', id);
     set({ loading: true, error: null });
 
     try {
@@ -288,8 +275,6 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
         .eq('id', id);
 
       if (error) throw error;
-
-      console.log('[BookingsStore] Booking cancelled');
 
       // Update local state
       set(state => ({

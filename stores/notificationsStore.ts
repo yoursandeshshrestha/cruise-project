@@ -58,11 +58,9 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
   initialize: async () => {
     const state = get();
     if (state.initialized) {
-      console.log('[NotificationsStore] Already initialized, skipping');
       return;
     }
 
-    console.log('[NotificationsStore] Initializing...');
 
     // Mark as initialized immediately to prevent re-initialization during rapid mount/unmount
     set({ initialized: true });
@@ -74,11 +72,9 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     // Real-time disabled due to persistent Supabase server-side binding issue
     // User can manually refresh the page to see updated counts
 
-    console.log('[NotificationsStore] Setup complete (Real-time disabled)');
   },
 
   cleanup: () => {
-    console.log('[NotificationsStore] Cleaning up...');
     set({ subscriptions: [], initialized: false });
   },
 }));

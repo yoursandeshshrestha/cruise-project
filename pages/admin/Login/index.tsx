@@ -26,13 +26,9 @@ export const AdminLogin: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('Login form submitted');
-    console.log('Email:', email);
 
     try {
-      console.log('Calling signIn...');
       await signIn(email, password);
-      console.log('Sign in successful, navigating...');
       navigate('/admin/dashboard');
     } catch (err) {
       console.error('Login error:', err);

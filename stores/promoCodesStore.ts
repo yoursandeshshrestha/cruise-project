@@ -46,7 +46,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
   // Fetch all promo codes
   fetchPromoCodes: async () => {
-    console.log('[PromoCodesStore] Fetching promo codes...');
     set({ loading: true, error: null });
 
     try {
@@ -57,7 +56,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[PromoCodesStore] Fetched promo codes:', data?.length || 0);
       set({ promoCodes: data || [], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch promo codes';
@@ -68,7 +66,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
   // Create promo code
   createPromoCode: async (data) => {
-    console.log('[PromoCodesStore] Creating promo code:', data.code);
     set({ error: null });
 
     try {
@@ -86,7 +83,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PromoCodesStore] Created promo code:', newPromoCode);
       set(state => ({
         promoCodes: [newPromoCode, ...state.promoCodes]
       }));
@@ -100,7 +96,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
   // Update promo code
   updatePromoCode: async (id, data) => {
-    console.log('[PromoCodesStore] Updating promo code:', id);
     set({ error: null });
 
     try {
@@ -116,7 +111,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PromoCodesStore] Promo code updated:', updated);
       set(state => ({
         promoCodes: state.promoCodes.map(pc => pc.id === id ? updated : pc)
       }));
@@ -130,7 +124,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
   // Delete promo code
   deletePromoCode: async (id) => {
-    console.log('[PromoCodesStore] Deleting promo code:', id);
     set({ error: null });
 
     try {
@@ -144,7 +137,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PromoCodesStore] Promo code deleted:', id);
       set(state => ({
         promoCodes: state.promoCodes.filter(pc => pc.id !== id)
       }));
@@ -158,7 +150,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
   // Validate promo code
   validatePromoCode: async (code: string, bookingAmount: number) => {
-    console.log('[PromoCodesStore] Validating promo code:', code, 'for amount:', bookingAmount);
 
     try {
       // Convert pounds to pence for database (database expects INTEGER in pence)
@@ -174,7 +165,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PromoCodesStore] Validation result:', data);
 
       // Convert discount_amount from pence back to pounds
       const result = data[0];
@@ -196,7 +186,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
 
   // Increment promo code usage
   incrementPromoCodeUsage: async (code: string) => {
-    console.log('[PromoCodesStore] Incrementing usage for promo code:', code);
 
     try {
       const { error } = await supabase.rpc('increment_promo_code_usage', {
@@ -208,7 +197,6 @@ export const usePromoCodesStore = create<PromoCodesState>((set, get) => ({
         throw error;
       }
 
-      console.log('[PromoCodesStore] Usage incremented for promo code:', code);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to increment promo code usage';
       console.error('[PromoCodesStore] Error:', errorMessage);

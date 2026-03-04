@@ -126,7 +126,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Fetch all settings (add-ons and pricing)
   fetchSettings: async () => {
-    console.log('[SettingsStore] Fetching settings...');
     set({ loading: true, error: null });
 
     try {
@@ -148,7 +147,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Fetch Add-ons
   fetchAddOns: async () => {
-    console.log('[SettingsStore] Fetching add-ons...');
     set({ loading: true, error: null });
 
     try {
@@ -165,7 +163,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         price: addon.price / 100, // Convert pence to pounds
       }));
 
-      console.log('[SettingsStore] Fetched add-ons:', addOnsInPounds.length);
       set({ addOns: addOnsInPounds, loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch add-ons';
@@ -176,7 +173,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Create Add-on
   createAddOn: async (data) => {
-    console.log('[SettingsStore] Creating add-on:', data.name);
     set({ error: null });
 
     try {
@@ -203,7 +199,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         price: newAddOn.price / 100,
       };
 
-      console.log('[SettingsStore] Created add-on:', newAddOnInPounds);
       set(state => ({
         addOns: [...state.addOns, newAddOnInPounds]
       }));
@@ -217,7 +212,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Update Add-on
   updateAddOn: async (id, data) => {
-    console.log('[SettingsStore] Updating add-on:', id);
     set({ error: null });
 
     try {
@@ -245,7 +239,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         price: updated.price / 100,
       };
 
-      console.log('[SettingsStore] Add-on updated:', updatedInPounds);
       set(state => ({
         addOns: state.addOns.map(a => a.id === id ? updatedInPounds : a)
       }));
@@ -259,7 +252,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Delete Add-on
   deleteAddOn: async (id) => {
-    console.log('[SettingsStore] Deleting add-on:', id);
     set({ error: null });
 
     try {
@@ -273,7 +265,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         throw error;
       }
 
-      console.log('[SettingsStore] Add-on deleted:', id);
       set(state => ({
         addOns: state.addOns.filter(a => a.id !== id)
       }));
@@ -287,7 +278,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Fetch Pricing Rules
   fetchPricingRules: async () => {
-    console.log('[SettingsStore] Fetching pricing rules...');
     set({ loading: true, error: null });
 
     try {
@@ -298,7 +288,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Fetched pricing rules:', data?.length || 0);
       set({ pricingRules: data || [], loading: false });
 
       // Recalculate parsed settings after state is updated
@@ -313,7 +302,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Create Pricing Rule
   createPricingRule: async (data) => {
-    console.log('[SettingsStore] Creating pricing rule...');
     set({ loading: true, error: null });
 
     try {
@@ -325,7 +313,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Pricing rule created:', newRule);
       set(state => ({
         pricingRules: [...state.pricingRules, newRule],
         loading: false
@@ -344,7 +331,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Update Pricing Rule
   updatePricingRule: async (id, data) => {
-    console.log('[SettingsStore] Updating pricing rule:', id);
     set({ loading: true, error: null });
 
     try {
@@ -355,7 +341,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Pricing rule updated');
       set(state => ({
         pricingRules: state.pricingRules.map(pr =>
           pr.id === id ? { ...pr, ...data } : pr
@@ -376,7 +361,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Delete Pricing Rule
   deletePricingRule: async (id) => {
-    console.log('[SettingsStore] Deleting pricing rule:', id);
     set({ loading: true, error: null });
 
     try {
@@ -387,7 +371,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Pricing rule deleted');
       set(state => ({
         pricingRules: state.pricingRules.filter(pr => pr.id !== id),
         loading: false
@@ -406,7 +389,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Fetch Capacity Overrides
   fetchCapacityOverrides: async () => {
-    console.log('[SettingsStore] Fetching capacity overrides...');
     set({ loading: true, error: null });
 
     try {
@@ -417,7 +399,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Fetched capacity overrides:', data?.length || 0);
       set({ capacityOverrides: data || [], loading: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch capacity overrides';
@@ -428,7 +409,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Create Capacity Override
   createCapacityOverride: async (data) => {
-    console.log('[SettingsStore] Creating capacity override...');
     set({ loading: true, error: null });
 
     try {
@@ -440,7 +420,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Capacity override created:', newOverride);
       set(state => ({
         capacityOverrides: [...state.capacityOverrides, newOverride],
         loading: false
@@ -455,7 +434,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Update Capacity Override
   updateCapacityOverride: async (id, data) => {
-    console.log('[SettingsStore] Updating capacity override:', id);
     set({ loading: true, error: null });
 
     try {
@@ -466,7 +444,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Capacity override updated');
       set(state => ({
         capacityOverrides: state.capacityOverrides.map(co =>
           co.id === id ? { ...co, ...data } : co
@@ -483,7 +460,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   // Delete Capacity Override
   deleteCapacityOverride: async (id) => {
-    console.log('[SettingsStore] Deleting capacity override:', id);
     set({ loading: true, error: null });
 
     try {
@@ -494,7 +470,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[SettingsStore] Capacity override deleted');
       set(state => ({
         capacityOverrides: state.capacityOverrides.filter(co => co.id !== id),
         loading: false

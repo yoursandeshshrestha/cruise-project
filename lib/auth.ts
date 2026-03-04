@@ -64,7 +64,7 @@ export const getCurrentSession = async () => {
 
 // Get admin user by email
 export const getAdminUser = async (email: string): Promise<AdminUser | null> => {
-  console.log('[getAdminUser] Fetching admin for email:', email);
+ 
 
   // Add timeout to detect hanging queries
   const timeoutPromise = new Promise<null>((resolve) => {
@@ -84,7 +84,7 @@ export const getAdminUser = async (email: string): Promise<AdminUser | null> => 
         console.error('[getAdminUser] Error fetching admin:', error);
         return null;
       }
-      console.log('[getAdminUser] Admin data:', data);
+
       return data as AdminUser;
     });
 

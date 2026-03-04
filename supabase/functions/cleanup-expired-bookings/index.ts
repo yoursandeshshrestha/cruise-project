@@ -27,7 +27,6 @@ serve(async (req) => {
     }
 
     const cancelledCount = data || 0;
-    console.log(`Cancelled ${cancelledCount} expired pending bookings`);
 
     return new Response(
       JSON.stringify({

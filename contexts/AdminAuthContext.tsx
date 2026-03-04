@@ -44,23 +44,23 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log('[AdminAuth] signIn called with email:', email);
+    
     setLoading(true);
     try {
-      console.log('[AdminAuth] Calling supabase.auth.signInWithPassword...');
+      
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         console.error('[AdminAuth] Auth error:', error);
         throw error;
       }
 
-      console.log('[AdminAuth] Auth successful, user:', data.user?.email);
+    
 
       if (data.user?.email) {
         // After successful auth, user is authenticated, so RLS should allow access
-        console.log('[AdminAuth] Fetching admin user record...');
+        
         const admin = await getAdminUser(data.user.email);
-        console.log('[AdminAuth] Admin user record:', admin);
+       
 
         if (!admin) {
           // If still can't find admin, sign out and throw error
@@ -74,17 +74,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           throw new Error('Admin account is inactive');
         }
 
-        // Update last login
-        console.log('[AdminAuth] Updating last login...');
+        
         await supabase
           .from('admin_users')
           .update({ last_login: new Date().toISOString() })
           .eq('email', data.user.email);
 
-        console.log('[AdminAuth] Setting admin user and user state...');
         setAdminUser(admin);
         setUser(data.user);
-        console.log('[AdminAuth] Sign in complete!');
+
       }
     } catch (error) {
       console.error('[AdminAuth] Sign in error:', error);

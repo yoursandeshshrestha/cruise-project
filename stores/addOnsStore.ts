@@ -31,7 +31,7 @@ export const useAddOnsStore = create<AddOnsState>((set) => ({
 
   // Fetch only active add-ons (public)
   fetchActiveAddOns: async () => {
-    console.log('[AddOnsStore] Fetching active add-ons...');
+   
     set({ loading: true, error: null });
 
     try {
@@ -43,7 +43,6 @@ export const useAddOnsStore = create<AddOnsState>((set) => ({
 
       if (error) throw error;
 
-      console.log('[AddOnsStore] Fetched active add-ons:', data?.length || 0);
       set({ addOns: data || [], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch active add-ons';

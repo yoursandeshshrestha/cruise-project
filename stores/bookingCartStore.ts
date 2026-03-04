@@ -21,7 +21,6 @@ export const useBookingCartStore = create<BookingCartState>()(
         const current = get().selectedAddOnSlugs;
         if (!current.includes(addOnSlug)) {
           set({ selectedAddOnSlugs: [...current, addOnSlug] });
-          console.log('[BookingCartStore] Added add-on:', addOnSlug);
         }
       },
 
@@ -29,12 +28,10 @@ export const useBookingCartStore = create<BookingCartState>()(
         set({
           selectedAddOnSlugs: get().selectedAddOnSlugs.filter(slug => slug !== addOnSlug)
         });
-        console.log('[BookingCartStore] Removed add-on:', addOnSlug);
       },
 
       clearCart: () => {
         set({ selectedAddOnSlugs: [] });
-        console.log('[BookingCartStore] Cart cleared');
       },
 
       hasAddOn: (addOnSlug: string) => {

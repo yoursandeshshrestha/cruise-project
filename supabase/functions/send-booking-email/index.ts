@@ -605,7 +605,6 @@ serve(async (req) => {
     const emailHTML = generateBookingEmailHTML(bookingData);
 
     // Generate PDF
-    console.log('Generating PDF for booking:', bookingData.booking_reference);
     const pdfBytes = await generateBookingPDF(bookingData);
     const pdfBlob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
 
@@ -691,7 +690,6 @@ Need help? Email us at info@simplecruiseparking.com
     }
 
     const result = await mailgunResponse.json();
-    console.log('Email sent successfully:', result);
 
     return new Response(
       JSON.stringify({

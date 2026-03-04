@@ -71,7 +71,6 @@ export const createCheckoutSession = async (
     throw new Error('Supabase URL is not configured');
   }
 
-  console.log('[Stripe] Creating checkout session for booking:', data.booking_reference);
 
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
@@ -82,7 +81,6 @@ export const createCheckoutSession = async (
       body: JSON.stringify(data),
     });
 
-    console.log('[Stripe] Checkout session response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -100,7 +98,6 @@ export const createCheckoutSession = async (
     }
 
     const result = await response.json();
-    console.log('[Stripe] Checkout session created:', result.sessionId);
     return result;
   } catch (error) {
     console.error('[Stripe] Error in createCheckoutSession:', error);

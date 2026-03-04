@@ -94,7 +94,17 @@ serve(async (req) => {
               ? Math.round(amendmentVatPounds * 100)
               : 0; // Fallback: assume 0 VAT if not provided
 
-            // Create amendment history entry
+            // Parse daily breakdown if available
+            let dailyBreakdown = null;
+            if (session.metadata?.daily_breakdown) {
+              try {
+                dailyBreakdown = JSON.parse(session.metadata.daily_breakdown);
+              } catch (e) {
+                console.error('Failed to parse daily_breakdown:', e);
+              }
+            }
+
+            // Create amendment history entry with comprehensive breakdown
             const amendmentEntry = {
               amended_at: new Date().toISOString(),
               previous_drop_off_datetime: currentBooking.drop_off_datetime,
@@ -113,6 +123,17 @@ serve(async (req) => {
               amendment_subtotal: amendmentSubtotal,
               stripe_payment_intent_id: paymentIntentId,
               stripe_checkout_session_id: session.id,
+              // Additional breakdown fields
+              daily_breakdown: dailyBreakdown,
+              amendment_fee: session.metadata?.amendment_fee ? parseFloat(session.metadata.amendment_fee) * 100 : null,
+              old_parking_cost: session.metadata?.old_parking_cost ? parseFloat(session.metadata.old_parking_cost) * 100 : null,
+              new_parking_cost: session.metadata?.new_parking_cost ? parseFloat(session.metadata.new_parking_cost) * 100 : null,
+              add_ons_cost: session.metadata?.add_ons_cost ? parseFloat(session.metadata.add_ons_cost) * 100 : null,
+              price_difference: session.metadata?.price_difference ? parseFloat(session.metadata.price_difference) * 100 : null,
+              vat_rate: session.metadata?.vat_rate ? parseFloat(session.metadata.vat_rate) : null,
+              pricing_reason: session.metadata?.pricing_reason || null,
+              previous_weekly_discount_percent: session.metadata?.previous_weekly_discount_percent ? parseFloat(session.metadata.previous_weekly_discount_percent) : null,
+              previous_weekly_discount_amount: session.metadata?.previous_weekly_discount_amount ? parseFloat(session.metadata.previous_weekly_discount_amount) * 100 : null,
             };
 
             // Add to amendment history

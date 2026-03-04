@@ -35,7 +35,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
   // Fetch all terminals (admin)
   fetchTerminals: async () => {
-    console.log('[TerminalsStore] Fetching all terminals...');
     set({ loading: true, error: null });
 
     try {
@@ -46,7 +45,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[TerminalsStore] Fetched terminals:', data?.length || 0);
       set({ terminals: data || [], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch terminals';
@@ -57,7 +55,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
   // Fetch only active terminals (public)
   fetchActiveTerminals: async () => {
-    console.log('[TerminalsStore] Fetching active terminals...');
     set({ loading: true, error: null });
 
     try {
@@ -69,7 +66,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
       if (error) throw error;
 
-      console.log('[TerminalsStore] Fetched active terminals:', data?.length || 0);
       set({ terminals: data || [], loading: false, initialized: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch active terminals';
@@ -80,7 +76,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
   // Create terminal
   createTerminal: async (data) => {
-    console.log('[TerminalsStore] Creating terminal:', data.name);
     set({ error: null });
 
     try {
@@ -109,7 +104,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
         throw error;
       }
 
-      console.log('[TerminalsStore] Created terminal:', newTerminal);
       set(state => ({
         terminals: [...state.terminals, newTerminal]
       }));
@@ -123,7 +117,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
   // Update terminal
   updateTerminal: async (id, data) => {
-    console.log('[TerminalsStore] Updating terminal:', id);
     set({ error: null });
 
     try {
@@ -143,7 +136,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
         throw error;
       }
 
-      console.log('[TerminalsStore] Updated terminal:', updated);
       set(state => ({
         terminals: state.terminals.map(t =>
           t.id === id ? updated : t
@@ -159,7 +151,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
   // Delete terminal
   deleteTerminal: async (id) => {
-    console.log('[TerminalsStore] Deleting terminal:', id);
     set({ error: null });
 
     try {
@@ -173,7 +164,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
         throw error;
       }
 
-      console.log('[TerminalsStore] Deleted terminal:', id);
       set(state => ({
         terminals: state.terminals.filter(t => t.id !== id)
       }));
@@ -187,7 +177,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
 
   // Toggle terminal status
   toggleTerminalStatus: async (id, currentStatus) => {
-    console.log('[TerminalsStore] Toggling terminal status:', id);
     set({ error: null });
 
     try {
@@ -203,7 +192,6 @@ export const useTerminalsStore = create<TerminalsState>((set, get) => ({
         throw error;
       }
 
-      console.log('[TerminalsStore] Toggled terminal status:', updated);
       set(state => ({
         terminals: state.terminals.map(t =>
           t.id === id ? updated : t

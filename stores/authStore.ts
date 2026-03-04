@@ -30,13 +30,11 @@ export const useAuthStore = create<AuthState>()(
       initialized: false,
 
       initialize: async () => {
-        console.log('[AuthStore] Initializing...');
 
         try {
           const { data: { session } } = await supabase.auth.getSession();
 
           if (session?.user) {
-            console.log('[AuthStore] Found existing session for:', session.user.email);
 
             // Session is already set by Supabase, no need to call setSession again
             // Fetch admin user
@@ -47,7 +45,6 @@ export const useAuthStore = create<AuthState>()(
               .maybeSingle();
 
             if (adminData) {
-              console.log('[AuthStore] Loaded admin user:', adminData.email);
               set({
                 user: session.user,
                 adminUser: adminData as AdminUser,
@@ -57,7 +54,6 @@ export const useAuthStore = create<AuthState>()(
             }
           }
 
-          console.log('[AuthStore] No existing session or admin user');
           set({ initialized: true });
         } catch (error) {
           console.error('[AuthStore] Initialize error:', error);
@@ -66,40 +62,29 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signIn: async (email: string, password: string) => {
-        console.log('[AuthStore] Signing in:', email);
         set({ loading: true });
 
         try {
           // 1. Authenticate with Supabase
-          console.log('[AuthStore] Step 1: Authenticating with Supabase...');
-          console.log('[AuthStore] About to call signInWithPassword');
 
           const authPromise = supabase.auth.signInWithPassword({
             email,
             password
           });
 
-          console.log('[AuthStore] signInWithPassword called, waiting for response...');
 
           const { data: authData, error: authError } = await authPromise;
 
-          console.log('[AuthStore] signInWithPassword completed');
 
           if (authError) {
             console.error('[AuthStore] Auth error:', authError);
             throw authError;
           }
 
-          console.log('[AuthStore] Auth successful, user:', authData.user?.email);
-          console.log('[AuthStore] Auth data:', authData);
-
           // 2. Fetch admin user record
-          console.log('[AuthStore] Step 2: Fetching admin user record...');
 
           // Verify session is available
           const { data: { session: currentSession } } = await supabase.auth.getSession();
-          console.log('[AuthStore] Current session before query:', currentSession ? 'exists' : 'null');
-          console.log('[AuthStore] Session access_token:', currentSession?.access_token?.substring(0, 50) + '...');
 
           // Add timeout to prevent hanging
           const adminQueryPromise = supabase
@@ -117,7 +102,6 @@ export const useAuthStore = create<AuthState>()(
             timeoutPromise
           ]) as any;
 
-          console.log('[AuthStore] Admin query result:', { adminData, adminError });
 
           if (adminError) {
             console.error('[AuthStore] Error fetching admin:', adminError);
@@ -137,10 +121,7 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Admin account is inactive');
           }
 
-          console.log('[AuthStore] Admin user found:', adminData.email, 'role:', adminData.role);
-
           // 3. Update last login
-          console.log('[AuthStore] Step 3: Updating last login...');
           const { error: updateError } = await supabase
             .from('admin_users')
             .update({ last_login: new Date().toISOString() })
@@ -152,16 +133,12 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // 4. Set state
-          console.log('[AuthStore] Step 4: Setting state...');
           const newState = {
             user: authData.user,
             adminUser: adminData as AdminUser,
             loading: false
           };
-          console.log('[AuthStore] New state:', newState);
           set(newState);
-
-          console.log('[AuthStore] ✓ Login complete!');
 
         } catch (error) {
           console.error('[AuthStore] Login failed:', error);
@@ -171,7 +148,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
-        console.log('[AuthStore] Signing out');
         set({ loading: true });
 
         await supabase.auth.signOut();

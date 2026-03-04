@@ -101,17 +101,14 @@ export const BookingFlow: React.FC = () => {
     const currentStep = step;
     const nextStepNumber = Math.min(currentStep + 1, 5) as BookingStep;
 
-    console.log('[BookingFlow] nextStep called - current:', currentStep, 'next:', nextStepNumber);
 
     // Check if booking is still enabled before proceeding to payment page (step 4)
     if (currentStep === 3 && nextStepNumber === 4) {
       setIsCheckingAvailability(true);
-      console.log('[BookingFlow] Checking booking availability before payment page...');
 
       // Refetch settings to ensure we have the latest data
       await fetchSettings();
       const stillEnabled = isBookingEnabled();
-      console.log('[BookingFlow] Real-time check before payment page - enabled:', stillEnabled);
 
       setIsCheckingAvailability(false);
 
@@ -124,12 +121,10 @@ export const BookingFlow: React.FC = () => {
     // Check if booking is still enabled before processing payment (step 4 -> 5)
     if (currentStep === 4 && nextStepNumber === 5) {
       setIsCheckingAvailability(true);
-      console.log('[BookingFlow] Checking booking availability before processing payment...');
 
       // Refetch settings to ensure we have the latest data
       await fetchSettings();
       const stillEnabled = isBookingEnabled();
-      console.log('[BookingFlow] Real-time check before processing payment - enabled:', stillEnabled);
 
       setIsCheckingAvailability(false);
 
