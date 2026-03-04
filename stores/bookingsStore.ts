@@ -11,11 +11,20 @@ interface BookingStats {
   cancelled: number;
 }
 
+interface RevenueAnalytics {
+  total_revenue: number;
+  year_revenue: number;
+  month_revenue: number;
+  booking_count: number;
+  avg_booking_value: number;
+}
+
 interface BookingsState {
   bookings: Booking[];
   allBookings: Booking[];
   currentBooking: Booking | null;
   stats: BookingStats | null;
+  revenueAnalytics: RevenueAnalytics | null;
   loading: boolean;
   error: string | null;
   initialized: boolean;
@@ -25,6 +34,7 @@ interface BookingsState {
   // Actions
   fetchBookings: (page?: number, limit?: number, filters?: { search?: string; status?: string; showPending?: boolean; date?: string }) => Promise<void>;
   fetchStats: () => Promise<void>;
+  fetchRevenueAnalytics: () => Promise<void>;
   fetchBookingByReference: (reference: string) => Promise<Booking | null>;
   fetchBookingsByEmail: (email: string) => Promise<Booking[]>;
   createBooking: (booking: BookingInsert) => Promise<Booking | null>;
@@ -48,6 +58,7 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
   allBookings: [],
   currentBooking: null,
   stats: null,
+  revenueAnalytics: null,
   loading: false,
   error: null,
   initialized: false,
@@ -84,6 +95,31 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stats';
       console.error('[BookingsStore] Error fetching stats:', errorMessage);
+    }
+  },
+
+  fetchRevenueAnalytics: async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_revenue_analytics');
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const analytics = data[0];
+        set({
+          revenueAnalytics: {
+            total_revenue: Number(analytics.total_revenue),
+            year_revenue: Number(analytics.year_revenue),
+            month_revenue: Number(analytics.month_revenue),
+            booking_count: Number(analytics.booking_count),
+            avg_booking_value: Number(analytics.avg_booking_value),
+          }
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch revenue analytics';
+      console.error('[BookingsStore] Error fetching revenue analytics:', errorMessage);
     }
   },
 
@@ -265,30 +301,52 @@ export const useBookingsStore = create<BookingsState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const { error } = await supabase
+      // Call the cancel-booking edge function which handles refund and email
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not configured');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/cancel-booking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          booking_id: id,
+          reason: reason,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to cancel booking');
+      }
+
+      // Fetch updated booking from database
+      const { data: updatedBooking, error: fetchError } = await supabase
         .from('bookings')
-        .update({
-          status: 'cancelled',
-          cancellation_reason: reason,
-          cancelled_at: new Date().toISOString()
-        })
-        .eq('id', id);
+        .select('*')
+        .eq('id', id)
+        .single();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
-      // Update local state
+      // Update local state with the full updated record
       set(state => ({
         bookings: state.bookings.map(b =>
-          b.id === id
-            ? { ...b, status: 'cancelled', cancellation_reason: reason, cancelled_at: new Date().toISOString() }
-            : b
+          b.id === id ? updatedBooking as unknown as Booking : b
         ),
         loading: false
       }));
+
+      return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to cancel booking';
       console.error('[BookingsStore] Error cancelling booking:', errorMessage);
       set({ error: errorMessage, loading: false });
+      throw error;
     }
   },
 }));
