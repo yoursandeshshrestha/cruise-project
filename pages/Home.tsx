@@ -138,11 +138,11 @@ export const Home: React.FC = () => {
           <style>{`
             @keyframes marquee {
               0% { transform: translateX(0); }
-              100% { transform: translateX(-33.333%); }
+              100% { transform: translateX(-50%); }
             }
             .charity-marquee {
               display: flex;
-              animation: marquee 20s linear infinite;
+              animation: marquee 17s linear infinite;
               width: max-content;
               pointer-events: none;
               user-select: none;
@@ -150,7 +150,7 @@ export const Home: React.FC = () => {
             }
           `}</style>
           <div className="charity-marquee">
-            {Array.from({ length: 3 }, () => [
+            {Array.from({ length: 2 }, () => [
               '/charities-logos/rnli.png',
               '/charities-logos/british-heart.png',
               '/charities-logos/seafarers.png',

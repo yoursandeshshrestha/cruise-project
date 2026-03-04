@@ -73,7 +73,7 @@ export const Terms: React.FC = () => {
             <h2 className="text-xl font-bold text-brand-dark mb-3">6. Keys</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>Vehicle keys must be handed to staff at check-in. This is a mandatory requirement of our block parking system and is non-negotiable.</li>
-              <li>All keys are stored securely off site for the duration of your booking and are not returned until you collect your vehicle.</li>
+              <li>Keys are kept securely on site during opening hours and stored off site overnight for the duration of your booking. Keys are not returned until you collect your vehicle.</li>
               <li>We are not responsible for faults or issues arising from worn or damaged keys.</li>
             </ul>
           </section>

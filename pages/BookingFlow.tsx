@@ -212,7 +212,6 @@ export const BookingFlow: React.FC = () => {
           <ul className="text-sm space-y-2 text-gray-700">
             <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> 10 minute transfer time</li>
             <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> CCTV & Gated Security</li>
-            <li className="flex items-center gap-2"><Check size={16} className="text-green-600" /> Keys stored securely off site</li>
           </ul>
         </div>
       </div>

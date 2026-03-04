@@ -137,7 +137,7 @@ export const Services: React.FC = () => {
                     </li>
                     <li className="flex items-start gap-3 text-brand-dark">
                         <span className="text-primary font-bold">•</span>
-                        All keys are stored securely off site for the duration of your stay.
+                        Keys are kept securely on site during opening hours and stored off site overnight.
                     </li>
                     <li className="flex items-start gap-3 text-brand-dark">
                         <span className="text-primary font-bold">•</span>

@@ -139,7 +139,7 @@ export const HowItWorks: React.FC = () => {
                         <Key size={20} className="text-primary" />
                         Do I need to leave my keys?
                     </h3>
-                    <p className="text-gray-600">Yes. As we operate a secure block parking facility to maximise space and security, we require your keys. They are stored securely off site and your vehicle is only moved by fully insured staff to manage the car park or perform add-on services.</p>
+                    <p className="text-gray-600">Yes. As we operate a secure block parking facility to maximise space and security, we require your keys. They are kept securely on site during opening hours and stored off site overnight. Your vehicle is only moved by fully insured staff to manage the car park or perform add-on services.</p>
                 </div>
                 
                  <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -147,7 +147,7 @@ export const HowItWorks: React.FC = () => {
                         <ShieldCheck size={20} className="text-primary" />
                         Is my car safe?
                     </h3>
-                    <p className="text-gray-600">Absolutely. Our facility is protected by ADT security systems, fully fenced with 24/7 CCTV monitoring, motion detection, and gated access. We conduct nightly patrols with a security dog and all keys are stored securely off site. Staff are on-site during all operational hours.</p>
+                    <p className="text-gray-600">Absolutely. Our facility is protected by ADT security systems, fully fenced with 24/7 CCTV monitoring, motion detection, and gated access. We conduct nightly patrols with a security dog. Car keys are kept securely on site during opening hours and stored off site overnight. Staff are on-site during all operational hours.</p>
                 </div>
 
                  <div className="bg-white p-6 rounded-lg shadow-sm">

@@ -3,33 +3,38 @@ import { useParams, Link } from 'react-router-dom';
 import { Layout } from '../../../components/client/Layout';
 import { BookingWidget } from '../../../components/client/BookingWidget';
 import { Button } from '../../../components/client/Button';
-import { MapPin, Navigation, Clock, Shield } from 'lucide-react';
+import { Navigation, Clock, Shield } from 'lucide-react';
 
-const TERMINAL_DATA: Record<string, { name: string; description: string; directions: string }> = {
+const TERMINAL_DATA: Record<string, { name: string; description: string; directions: string; mapQuery: string }> = {
   'ocean-terminal': {
     name: 'Ocean Cruise Terminal',
     description: 'Parking for Ocean Terminal Southampton (Dock Gate 4). We provide the fastest shuttle service directly to the baggage drop.',
-    directions: 'Ocean Terminal is located in the Eastern Docks. Our shuttle enters via Dock Gate 4, getting you as close to the ship as possible.'
+    directions: 'Ocean Terminal is located in the Eastern Docks. Our shuttle enters via Dock Gate 4, getting you as close to the ship as possible.',
+    mapQuery: 'Ocean+Cruise+Terminal+Cunard+Road+Southampton+SO14+3QN'
   },
   'mayflower-terminal': {
     name: 'Mayflower Cruise Terminal',
     description: 'Secure parking for Mayflower Terminal (Dock Gate 10). Perfect for P&O and Cunard passengers.',
-    directions: 'Mayflower Terminal is in the Western Docks. It is one of the busiest terminals, but our shuttle drivers know the shortcuts to avoid the queues.'
+    directions: 'Mayflower Terminal is in the Western Docks. It is one of the busiest terminals, but our shuttle drivers know the shortcuts to avoid the queues.',
+    mapQuery: 'Mayflower+Cruise+Terminal+Herbert+Walker+Avenue+Southampton+SO15+1HJ'
   },
   'city-cruise-terminal': {
     name: 'City Cruise Terminal',
     description: 'Convenient parking for City Cruise Terminal (Dock Gate 8). Ideal for Royal Caribbean and MSC cruises.',
-    directions: 'Located in the Western Docks, accessible via Dock Gate 8. Our drop-off point is right outside the main luggage hall.'
+    directions: 'Located in the Western Docks, accessible via Dock Gate 8. Our drop-off point is right outside the main luggage hall.',
+    mapQuery: 'City+Cruise+Terminal+Southampton+SO15+1AJ'
   },
   'qeii-terminal': {
     name: 'QEII Terminal',
     description: 'Off-site parking for the QEII Terminal (Dock Gate 4). Secure your car and enjoy a quick transfer.',
-    directions: 'The QEII Terminal is situated in the Eastern Docks. Please note this terminal is often used for day visits and smaller vessels.'
+    directions: 'The QEII Terminal is situated in the Eastern Docks. Please note this terminal is often used for day visits and smaller vessels.',
+    mapQuery: 'QEII+Terminal+Eastern+Docks+Southampton+SO14+3GF'
   },
   'horizon-terminal': {
     name: 'Horizon Cruise Terminal',
     description: 'Parking for the new Horizon Terminal (Dock Gate 10). The newest facility in Southampton.',
-    directions: 'Horizon is the newest terminal in Southampton, located near Mayflower in the Western Docks. Our shuttles have priority drop-off access.'
+    directions: 'Horizon is the newest terminal in Southampton, located near Mayflower in the Western Docks. Our shuttles have priority drop-off access.',
+    mapQuery: 'Horizon+Cruise+Terminal+Western+Docks+Southampton'
   }
 };
 
@@ -108,12 +113,18 @@ export const Terminal: React.FC = () => {
             </div>
           </div>
 
-          {/* Placeholder Image/Map */}
-          <div className="bg-gray-100 rounded-2xl min-h-[400px] flex items-center justify-center relative overflow-hidden">
-             <div className="text-center p-6">
-                <MapPin size={48} className="text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Map of route to {terminal.name}</p>
-             </div>
+          {/* Google Map Embed */}
+          <div className="rounded-2xl overflow-hidden shadow-light border border-gray-100 min-h-[400px]">
+            <iframe
+              title={`Map of ${terminal.name}`}
+              width="100%"
+              height="400"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://maps.google.com/maps?q=${terminal.mapQuery}&output=embed&z=15`}
+            />
           </div>
 
         </div>

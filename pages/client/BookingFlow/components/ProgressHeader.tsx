@@ -8,7 +8,7 @@ interface ProgressHeaderProps {
 
 export const ProgressHeader: React.FC<ProgressHeaderProps> = ({ currentStep }) => {
   return (
-    <div className="bg-white border-b border-gray-200 sticky top-20 z-40">
+    <div className="bg-white border-b border-gray-200 sticky top-16 lg:top-20 z-40">
       <div className="max-w-3xl mx-auto px-4 py-4">
         <div className="flex justify-between items-center text-sm font-medium text-gray-400">
           <span className={currentStep >= 1 ? 'text-primary' : ''}>Trip</span>

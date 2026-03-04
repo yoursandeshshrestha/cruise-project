@@ -7,7 +7,7 @@ export const FAQs: React.FC = () => {
   const faqItems = [
     {
         title: "Do I need to leave my car keys?",
-        content: "Yes, we operate a block parking system to ensure maximum security and efficiency within our compound. Your keys are tagged and stored securely off site. Your vehicle is only moved by our fully insured professional drivers for parking management or add-on services."
+        content: "Yes, we operate a block parking system to ensure maximum security and efficiency within our compound. Your keys are tagged and kept securely on site during opening hours. Overnight, keys are stored securely off site for added peace of mind. Your vehicle is only moved by our fully insured professional drivers for parking management or add-on services."
     },
     {
         title: "How often do the shuttle buses run?",
@@ -15,7 +15,7 @@ export const FAQs: React.FC = () => {
     },
     {
         title: "Is the car park secure?",
-        content: "Security is our top priority. Our facility is protected by ADT security systems, surrounded by perimeter fencing, monitored by 24/7 CCTV, and has gated access. We also have staff on-site during all operational hours and conduct nightly patrols with a security dog. All car keys are stored securely off site. We have been awarded the Park Mark Safer Parking award."
+        content: "Security is our top priority. Our facility is protected by ADT security systems, surrounded by perimeter fencing, monitored by 24/7 CCTV, and has gated access. We also have staff on-site during all operational hours and conduct nightly patrols with a security dog. Car keys are kept securely on site during opening hours and stored off site overnight."
     },
     {
         title: "What time should I arrive?",
