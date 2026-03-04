@@ -1,8 +1,9 @@
 import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { DATE_FORMAT } from "@/lib/dateUtils"
 
 import { cn } from "@/lib/utils"
+import { format } from "date-fns"
 import {
   Popover,
   PopoverContent,
@@ -60,7 +61,7 @@ export function DatePicker({
           >
             <CalendarIcon size={16} className="mr-2 text-gray-500" />
             {value ? (
-              <span className="text-[#001848]">{format(value, "MMM dd, yyyy")}</span>
+              <span className="text-[#001848]">{format(value, DATE_FORMAT)}</span>
             ) : (
               <span className="text-gray-400">{placeholder}</span>
             )}

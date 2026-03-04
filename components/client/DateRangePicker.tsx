@@ -4,6 +4,7 @@ import { format } from "date-fns"
 import { DayPicker, type DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
+import { DATE_FORMAT } from "@/lib/dateUtils"
 import {
   Popover,
   PopoverContent,
@@ -65,10 +66,10 @@ export function DateRangePicker({
             {value?.from ? (
               value.to ? (
                 <span className="text-[#001848]">
-                  {format(value.from, "MMM dd, yyyy")} - {format(value.to, "MMM dd, yyyy")}
+                  {format(value.from, DATE_FORMAT)} - {format(value.to, DATE_FORMAT)}
                 </span>
               ) : (
-                <span className="text-[#001848]">{format(value.from, "MMM dd, yyyy")}</span>
+                <span className="text-[#001848]">{format(value.from, DATE_FORMAT)}</span>
               )
             ) : (
               <span className="text-gray-400">{placeholder}</span>
