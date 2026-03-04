@@ -119,21 +119,6 @@ export const Account: React.FC = () => {
           </div>
         </div>
 
-        {/* Password Change */}
-        <div className="bg-card rounded-lg border p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-2">Password</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Change your password to keep your account secure
-          </p>
-
-          <Button disabled className="cursor-not-allowed opacity-50">
-            Change Password
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Password change feature will be available after Mailgun integration
-          </p>
-        </div>
-
         {/* Delete Account */}
         <div className="bg-card rounded-lg border border-red-200 p-6">
           <h2 className="text-lg font-semibold text-red-600 mb-2">Danger Zone</h2>
