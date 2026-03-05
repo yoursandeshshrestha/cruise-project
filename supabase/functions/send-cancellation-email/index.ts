@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,6 +35,437 @@ function formatDateTime(isoString: string): string {
 
 function formatCurrency(amountInPence: number): string {
   return `£${(amountInPence / 100).toFixed(2)}`;
+}
+
+async function generateCancellationPDF(data: CancellationEmailData): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595, 842]); // A4 size
+
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const { width, height } = page.getSize();
+  let yPosition = height - 50;
+
+  // Fetch and embed logo
+  let logoImage;
+  try {
+    const logoUrl = Deno.env.get('LOGO_URL') || 'https://simplecruiseparking.com/logos/simplecruise-logo-white.png';
+    const logoResponse = await fetch(logoUrl);
+    const logoArrayBuffer = await logoResponse.arrayBuffer();
+    const logoBytes = new Uint8Array(logoArrayBuffer);
+    logoImage = await pdfDoc.embedPng(logoBytes);
+  } catch (error) {
+    console.warn('Failed to load logo, continuing without it:', error);
+    logoImage = null;
+  }
+
+  // Brand colors
+  const brandPrimary = rgb(0, 0.663, 0.996); // #00a9fe
+  const brandDark = rgb(0, 0.094, 0.282); // #001848
+  const textGray = rgb(0.467, 0.467, 0.467); // #777
+  const lightBg = rgb(0.949, 0.976, 1); // #f2f9ff
+  const borderColor = rgb(0.945, 0.945, 0.945); // #f1f1f1
+  const cancelRed = rgb(0.863, 0.149, 0.149); // #dc2626
+
+  // Header with red background for cancellation
+  page.drawRectangle({
+    x: 0,
+    y: height - 80,
+    width: width,
+    height: 80,
+    color: cancelRed,
+  });
+
+  // Logo or Company Name in Header (centered)
+  if (logoImage) {
+    const logoDims = logoImage.scale(0.15); // Scale logo to appropriate size
+    page.drawImage(logoImage, {
+      x: (width - logoDims.width) / 2,
+      y: height - 65,
+      width: logoDims.width,
+      height: logoDims.height,
+    });
+  } else {
+    // Fallback to text if logo fails to load
+    const companyText = 'SIMPLE CRUISE PARKING';
+    const companyTextWidth = helveticaBold.widthOfTextAtSize(companyText, 18);
+    page.drawText(companyText, {
+      x: (width - companyTextWidth) / 2,
+      y: yPosition,
+      size: 18,
+      font: helveticaBold,
+      color: rgb(1, 1, 1),
+    });
+  }
+  yPosition -= 100;
+
+  // Title Section
+  const titleText = 'Booking Cancelled';
+  const titleWidth = helveticaBold.widthOfTextAtSize(titleText, 20);
+  page.drawText(titleText, {
+    x: (width - titleWidth) / 2,
+    y: yPosition,
+    size: 20,
+    font: helveticaBold,
+    color: brandDark,
+  });
+  yPosition -= 20;
+
+  const messageText = 'Your parking booking has been cancelled as requested.';
+  const messageWidth = helveticaFont.widthOfTextAtSize(messageText, 11);
+  page.drawText(messageText, {
+    x: (width - messageWidth) / 2,
+    y: yPosition,
+    size: 11,
+    font: helveticaFont,
+    color: textGray,
+  });
+  yPosition -= 35;
+
+  // Booking Reference Box with light red background
+  const refBg = rgb(0.996, 0.886, 0.886); // #fee2e2
+  page.drawRectangle({
+    x: 50,
+    y: yPosition - 55,
+    width: width - 100,
+    height: 60,
+    color: refBg,
+    borderRadius: 8,
+  });
+
+  const refLabelText = 'CANCELLED BOOKING REFERENCE';
+  const refLabelWidth = helveticaFont.widthOfTextAtSize(refLabelText, 8);
+  page.drawText(refLabelText, {
+    x: (width - refLabelWidth) / 2,
+    y: yPosition - 15,
+    size: 8,
+    font: helveticaFont,
+    color: cancelRed,
+  });
+
+  const refWidth = helveticaBold.widthOfTextAtSize(data.booking_reference, 20);
+  page.drawText(data.booking_reference, {
+    x: (width - refWidth) / 2,
+    y: yPosition - 40,
+    size: 20,
+    font: helveticaBold,
+    color: brandDark,
+  });
+  yPosition -= 80;
+
+  // Booking Details
+  const formatSimpleDateTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).replace(',', '');
+  };
+
+  const details = [
+    { label: 'Drop Off', value: formatSimpleDateTime(data.drop_off_datetime) },
+    { label: 'Return', value: formatSimpleDateTime(data.return_datetime) },
+    { label: 'Cruise Line', value: data.cruise_line },
+    { label: 'Ship', value: data.ship_name },
+  ];
+
+  details.forEach((detail, index) => {
+    page.drawText(detail.label, {
+      x: 50,
+      y: yPosition,
+      size: 10,
+      font: helveticaFont,
+      color: textGray,
+    });
+
+    const valueWidth = helveticaBold.widthOfTextAtSize(detail.value, 10);
+    page.drawText(detail.value, {
+      x: width - 50 - valueWidth,
+      y: yPosition,
+      size: 10,
+      font: helveticaBold,
+      color: brandDark,
+    });
+
+    // Draw bottom border for all except last item
+    if (index < details.length - 1) {
+      yPosition -= 18;
+      page.drawLine({
+        start: { x: 50, y: yPosition },
+        end: { x: width - 50, y: yPosition },
+        thickness: 0.5,
+        color: borderColor,
+      });
+      yPosition -= 6;
+    } else {
+      yPosition -= 24;
+    }
+  });
+
+  // Refund Section Background
+  yPosition -= 10;
+  const hasRefund = data.refund_amount > 0;
+
+  if (hasRefund) {
+    // Refund issued - green box
+    const refundBg = rgb(0.863, 0.988, 0.906); // #dcfce7
+    const refundGreen = rgb(0.086, 0.396, 0.204); // #166534
+
+    page.drawRectangle({
+      x: 50,
+      y: yPosition - 100,
+      width: width - 100,
+      height: 100,
+      color: refundBg,
+      borderRadius: 8,
+    });
+
+    // Left border accent
+    page.drawRectangle({
+      x: 50,
+      y: yPosition - 100,
+      width: 3,
+      height: 100,
+      color: rgb(0.525, 0.918, 0.671), // #86efac
+    });
+
+    yPosition -= 15;
+
+    page.drawText('Refund Issued', {
+      x: 60,
+      y: yPosition,
+      size: 12,
+      font: helveticaBold,
+      color: refundGreen,
+    });
+    yPosition -= 16;
+
+    const refundMessage = 'Your refund has been processed and will appear in your';
+    page.drawText(refundMessage, {
+      x: 60,
+      y: yPosition,
+      size: 9,
+      font: helveticaFont,
+      color: rgb(0.082, 0.502, 0.239), // #15803d
+    });
+    yPosition -= 12;
+
+    page.drawText('account within 5-10 business days.', {
+      x: 60,
+      y: yPosition,
+      size: 9,
+      font: helveticaFont,
+      color: rgb(0.082, 0.502, 0.239),
+    });
+    yPosition -= 20;
+
+    // Divider line
+    page.drawLine({
+      start: { x: 60, y: yPosition },
+      end: { x: width - 60, y: yPosition },
+      thickness: 0.5,
+      color: rgb(0.733, 0.969, 0.816), // #bbf7d0
+    });
+    yPosition -= 14;
+
+    // Original and refund amounts
+    page.drawText('Original Amount', {
+      x: 60,
+      y: yPosition,
+      size: 10,
+      font: helveticaFont,
+      color: refundGreen,
+    });
+
+    const originalValue = formatCurrency(data.total);
+    const originalWidth = helveticaBold.widthOfTextAtSize(originalValue, 10);
+    page.drawText(originalValue, {
+      x: width - 60 - originalWidth,
+      y: yPosition,
+      size: 10,
+      font: helveticaBold,
+      color: refundGreen,
+    });
+    yPosition -= 16;
+
+    page.drawText('Refund Amount', {
+      x: 60,
+      y: yPosition,
+      size: 12,
+      font: helveticaBold,
+      color: refundGreen,
+    });
+
+    const refundValue = formatCurrency(data.refund_amount);
+    const refundWidth = helveticaBold.widthOfTextAtSize(refundValue, 14);
+    page.drawText(refundValue, {
+      x: width - 60 - refundWidth,
+      y: yPosition,
+      size: 14,
+      font: helveticaBold,
+      color: refundGreen,
+    });
+    yPosition -= 25;
+  } else {
+    // No refund - yellow warning box
+    const noRefundBg = rgb(0.996, 0.953, 0.780); // #fef3c7
+    const warningYellow = rgb(0.522, 0.302, 0.055); // #854d0e
+
+    page.drawRectangle({
+      x: 50,
+      y: yPosition - 60,
+      width: width - 100,
+      height: 60,
+      color: noRefundBg,
+      borderRadius: 8,
+    });
+
+    // Left border accent
+    page.drawRectangle({
+      x: 50,
+      y: yPosition - 60,
+      width: 3,
+      height: 60,
+      color: rgb(0.992, 0.878, 0.278), // #fde047
+    });
+
+    yPosition -= 15;
+
+    page.drawText('No Refund Issued', {
+      x: 60,
+      y: yPosition,
+      size: 12,
+      font: helveticaBold,
+      color: warningYellow,
+    });
+    yPosition -= 16;
+
+    const noRefundMsg1 = 'As per our cancellation policy, bookings cancelled within 48';
+    const noRefundMsg2 = 'hours of the scheduled drop-off time are non-refundable.';
+
+    page.drawText(noRefundMsg1, {
+      x: 60,
+      y: yPosition,
+      size: 9,
+      font: helveticaFont,
+      color: rgb(0.631, 0.384, 0.027), // #a16207
+    });
+    yPosition -= 12;
+
+    page.drawText(noRefundMsg2, {
+      x: 60,
+      y: yPosition,
+      size: 9,
+      font: helveticaFont,
+      color: rgb(0.631, 0.384, 0.027),
+    });
+    yPosition -= 20;
+  }
+
+  // What Happens Next with styled box
+  const infoBoxHeight = hasRefund ? 95 : 75;
+  page.drawRectangle({
+    x: 50,
+    y: yPosition - infoBoxHeight,
+    width: width - 100,
+    height: infoBoxHeight,
+    color: rgb(0.961, 0.961, 0.961), // #f5f5f5
+    borderRadius: 6,
+  });
+
+  // Left border accent
+  page.drawRectangle({
+    x: 50,
+    y: yPosition - infoBoxHeight,
+    width: 3,
+    height: infoBoxHeight,
+    color: rgb(0.863, 0.863, 0.863), // #dcdcdc
+  });
+
+  yPosition -= 15;
+
+  page.drawText('What Happens Next', {
+    x: 60,
+    y: yPosition,
+    size: 12,
+    font: helveticaBold,
+    color: rgb(0.133, 0.133, 0.133), // #222
+  });
+  yPosition -= 18;
+
+  const infoPoints = hasRefund
+    ? [
+        `Your refund of ${formatCurrency(data.refund_amount)} will be processed within 5-10 business days`,
+        'The refund will appear in your original payment method',
+        'You will receive a confirmation email once this process is complete',
+        'If you have any questions, please contact our support team',
+      ]
+    : [
+        'No refund will be issued as per our cancellation policy',
+        'You will receive a confirmation email once this process is complete',
+        'If you have any questions, please contact our support team',
+      ];
+
+  infoPoints.forEach((point) => {
+    page.drawText(`• ${point}`, {
+      x: 60,
+      y: yPosition,
+      size: 9,
+      font: helveticaFont,
+      color: rgb(0.333, 0.333, 0.333), // #555
+    });
+    yPosition -= 14;
+  });
+
+  // Footer
+  yPosition -= 15;
+  const footerY = 60;
+
+  // Footer background
+  page.drawRectangle({
+    x: 0,
+    y: 0,
+    width: width,
+    height: footerY,
+    color: rgb(0.980, 0.980, 0.980), // #fafafa
+  });
+
+  // Top border line
+  page.drawLine({
+    start: { x: 0, y: footerY },
+    end: { x: width, y: footerY },
+    thickness: 1,
+    color: rgb(0.945, 0.945, 0.945), // #f1f1f1
+  });
+
+  const year = new Date().getFullYear();
+  const contactText = 'Need help? info@simplecruiseparking.com';
+  const contactWidth = helveticaFont.widthOfTextAtSize(contactText, 9);
+
+  page.drawText(contactText, {
+    x: (width - contactWidth) / 2,
+    y: footerY - 20,
+    size: 9,
+    font: helveticaFont,
+    color: rgb(0.6, 0.6, 0.6),
+  });
+
+  const copyrightText = `© ${year} Simple Cruise Parking Ltd. All rights reserved.`;
+  const copyrightWidth = helveticaFont.widthOfTextAtSize(copyrightText, 8);
+
+  page.drawText(copyrightText, {
+    x: (width - copyrightWidth) / 2,
+    y: footerY - 35,
+    size: 8,
+    font: helveticaFont,
+    color: rgb(0.667, 0.667, 0.667), // #aaa
+  });
+
+  return await pdfDoc.save();
 }
 
 function generateCancellationEmailHTML(data: CancellationEmailData): string {
@@ -279,6 +711,10 @@ serve(async (req) => {
     // Generate email HTML
     const emailHTML = generateCancellationEmailHTML(data);
 
+    // Generate PDF
+    const pdfBytes = await generateCancellationPDF(data);
+    const pdfBlob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+
     // Prepare form data for Mailgun
     const formData = new FormData();
     formData.append('from', `Simple Cruise Parking <${fromEmail}>`);
@@ -318,6 +754,9 @@ If you have any questions, please contact us at info@simplecruiseparking.com
     `);
 
     formData.append('html', emailHTML);
+
+    // Attach PDF to email
+    formData.append('attachment', pdfBlob, `cancellation-${data.booking_reference}.pdf`);
 
     // Send email via Mailgun
     const mailgunResponse = await fetch(

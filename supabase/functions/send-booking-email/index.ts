@@ -55,6 +55,19 @@ async function generateBookingPDF(data: BookingEmailData): Promise<Uint8Array> {
   const { width, height } = page.getSize();
   let yPosition = height - 50;
 
+  // Fetch and embed logo
+  let logoImage;
+  try {
+    const logoUrl = Deno.env.get('LOGO_URL') || 'https://simplecruiseparking.com/logos/simplecruise-logo-white.png';
+    const logoResponse = await fetch(logoUrl);
+    const logoArrayBuffer = await logoResponse.arrayBuffer();
+    const logoBytes = new Uint8Array(logoArrayBuffer);
+    logoImage = await pdfDoc.embedPng(logoBytes);
+  } catch (error) {
+    console.warn('Failed to load logo, continuing without it:', error);
+    logoImage = null;
+  }
+
   // Brand colors
   const brandPrimary = rgb(0, 0.663, 0.996); // #00a9fe
   const brandDark = rgb(0, 0.094, 0.282); // #001848
@@ -72,16 +85,27 @@ async function generateBookingPDF(data: BookingEmailData): Promise<Uint8Array> {
     color: headerBg,
   });
 
-  // Company Name in Header (centered)
-  const companyText = 'SIMPLE CRUISE PARKING';
-  const companyTextWidth = helveticaBold.widthOfTextAtSize(companyText, 18);
-  page.drawText(companyText, {
-    x: (width - companyTextWidth) / 2,
-    y: yPosition,
-    size: 18,
-    font: helveticaBold,
-    color: rgb(1, 1, 1),
-  });
+  // Logo or Company Name in Header (centered)
+  if (logoImage) {
+    const logoDims = logoImage.scale(0.15); // Scale logo to appropriate size
+    page.drawImage(logoImage, {
+      x: (width - logoDims.width) / 2,
+      y: height - 65,
+      width: logoDims.width,
+      height: logoDims.height,
+    });
+  } else {
+    // Fallback to text if logo fails to load
+    const companyText = 'SIMPLE CRUISE PARKING';
+    const companyTextWidth = helveticaBold.widthOfTextAtSize(companyText, 18);
+    page.drawText(companyText, {
+      x: (width - companyTextWidth) / 2,
+      y: yPosition,
+      size: 18,
+      font: helveticaBold,
+      color: rgb(1, 1, 1),
+    });
+  }
   yPosition -= 100;
 
   // Title Section
