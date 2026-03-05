@@ -2,7 +2,8 @@ import React from 'react';
 import { Layout } from '../../../components/client/Layout';
 import { BookingWidget } from '../../../components/client/BookingWidget';
 import { Button } from '../../../components/client/Button';
-import { Shield, Clock, Smile, MapPin, Star, Truck } from 'lucide-react';
+import { SEO, SITE_URL } from '../../../components/client/SEO';
+import { Shield, Clock, Smile, MapPin, Star, Truck, Anchor } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; text: string }> = ({ icon, title, text }) => (
@@ -28,12 +29,99 @@ const ReviewCard: React.FC<{ name: string; date: string; text: string }> = ({ na
   </div>
 );
 
+const TERMINALS = [
+  { slug: 'ocean-terminal', name: 'Ocean Cruise Terminal' },
+  { slug: 'mayflower-terminal', name: 'Mayflower Cruise Terminal' },
+  { slug: 'city-cruise-terminal', name: 'City Cruise Terminal' },
+  { slug: 'qeii-terminal', name: 'QEII Terminal' },
+  { slug: 'horizon-terminal', name: 'Horizon Cruise Terminal' },
+];
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Simple Cruise Parking',
+  description: 'Secure cruise parking in Southampton with fast shuttle transfers to all cruise terminals.',
+  url: SITE_URL,
+  telephone: '+442382002020',
+  image: `${SITE_URL}/homepage-hero.jpg`,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Southampton',
+    addressRegion: 'Hampshire',
+    addressCountry: 'GB',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 50.8983,
+    longitude: -1.3964,
+  },
+  areaServed: {
+    '@type': 'City',
+    name: 'Southampton',
+    addressCountry: 'GB',
+  },
+  openingHoursSpecification: {
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    opens: '00:00',
+    closes: '23:59',
+  },
+  priceRange: '$$',
+};
+
+const serviceSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  provider: {
+    '@type': 'LocalBusiness',
+    name: 'Simple Cruise Parking',
+    url: SITE_URL,
+  },
+  serviceType: 'Cruise Parking',
+  name: 'Southampton Cruise Parking',
+  description: 'Secure off-site cruise parking in Southampton with shuttle transfers to all cruise terminals.',
+  areaServed: {
+    '@type': 'City',
+    name: 'Southampton',
+    addressCountry: 'GB',
+  },
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Cruise Parking Services',
+    itemListElement: [
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Cruise Parking' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Cruise Terminal Parking' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Southampton Cruise Parking' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Port Parking Southampton' } },
+    ],
+  },
+};
+
 export const Home: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="Cruise Parking Southampton | Secure Port Parking with Shuttle Transfers"
+        description="Secure cruise parking in Southampton with fast shuttle transfers to all cruise terminals. Safe parking while you cruise."
+        canonicalPath="/"
+        schemaMarkup={[localBusinessSchema, serviceSchema]}
+        breadcrumbs={[{ name: 'Home', path: '/' }]}
+      />
+
       {/* Hero Section */}
       <section className="text-white pt-20 pb-24 md:pb-32 px-4 relative overflow-hidden" style={{ backgroundImage: "url('/homepage-hero.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-brand-dark/60"></div>
+        <picture className="sr-only">
+          <source srcSet="/homepage-hero.webp" type="image/webp" />
+          <img
+            src="/homepage-hero.jpg"
+            alt="Secure cruise parking in Southampton with shuttle transfer to cruise terminals"
+            width={1920}
+            height={1080}
+            fetchPriority="high"
+          />
+        </picture>
         <div className="max-w-7xl mx-auto relative z-10 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
             Start your holiday <br className="hidden md:block"/> the simple way.
@@ -131,32 +219,32 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Charities We Support */}
-      <section className="bg-primary py-16 overflow-hidden">
-        <h2 className="text-3xl font-bold text-white mb-12 text-center">Charities We Support</h2>
-        <div className="relative flex">
-          <style>{`
-            @keyframes marquee {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .charity-marquee {
-              display: flex;
-              animation: marquee 17s linear infinite;
-              width: max-content;
-              pointer-events: none;
-              user-select: none;
-              will-change: transform;
-            }
-          `}</style>
-          <div className="charity-marquee">
-            {Array.from({ length: 2 }, () => [
-              '/charities-logos/rnli.png',
-              '/charities-logos/british-heart.png',
-              '/charities-logos/seafarers.png',
-              '/charities-logos/ocean-cleanup.png',
-            ]).flat().map((src, i) => (
-              <img key={i} src={src} alt="" className="h-36 w-auto mx-16 shrink-0 object-contain" />
+      {/* Cruise Terminals We Serve */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-brand-dark mb-4">Southampton Cruise Terminal Parking</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              We provide secure parking with shuttle transfers to all Southampton cruise terminals. Choose your terminal below.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TERMINALS.map((t) => (
+              <Link
+                key={t.slug}
+                to={`/parking/${t.slug}`}
+                className="flex items-center gap-4 p-5 bg-neutral-light rounded-xl border border-gray-100 hover:shadow-medium hover:border-primary/30 transition-all group"
+              >
+                <div className="bg-blue-50 p-3 rounded-lg text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                  <Anchor size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-brand-dark group-hover:text-primary transition-colors">
+                    {t.name} Parking
+                  </h3>
+                  <p className="text-sm text-gray-500">Parking near {t.name}</p>
+                </div>
+              </Link>
             ))}
           </div>
         </div>

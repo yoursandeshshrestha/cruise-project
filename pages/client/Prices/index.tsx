@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Button } from '../../../components/client/Button';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, Zap, Droplets, Sparkles, Clock, Calendar, Truck } from 'lucide-react';
@@ -69,6 +70,12 @@ export const Prices: React.FC = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Parking Prices | Simple Cruise Parking Southampton"
+        description="Affordable cruise parking prices in Southampton. Compare our rates and save money versus on-port parking. Book online for the best price."
+        canonicalPath="/prices"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Prices', path: '/prices' }]}
+      />
       <div className="bg-brand-dark text-white py-20 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Transparent Pricing</h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">

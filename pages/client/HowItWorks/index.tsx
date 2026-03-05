@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Button } from '../../../components/client/Button';
 import { Link } from 'react-router-dom';
 import { MapPin, Truck, CheckCircle, Clock, Phone, Key, ShieldCheck, PlayCircle } from 'lucide-react';
@@ -7,6 +8,12 @@ import { MapPin, Truck, CheckCircle, Clock, Phone, Key, ShieldCheck, PlayCircle 
 export const HowItWorks: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="How It Works | Simple Cruise Parking Southampton"
+        description="See how easy it is to park with us. Drive in, hop on our free shuttle to any Southampton cruise terminal, and we'll pick you up when you return."
+        canonicalPath="/how-it-works"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'How It Works', path: '/how-it-works' }]}
+      />
       {/* Hero Section */}
       <div className="bg-primary text-white py-16 md:py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-brand-dark/10"></div>

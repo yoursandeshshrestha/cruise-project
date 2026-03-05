@@ -1,9 +1,16 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 
 export const Cookies: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="Cookie Policy | Simple Cruise Parking Southampton"
+        description="Cookie policy for Simple Cruise Parking. Learn about the cookies we use on our website and how to manage your preferences."
+        canonicalPath="/cookies"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Cookie Policy', path: '/cookies' }]}
+      />
       <div className="max-w-3xl mx-auto px-4 py-16 text-brand-dark">
         <h1 className="text-3xl font-bold mb-2">Cookie Policy</h1>
         <p className="text-sm text-gray-500 mb-8">Simple Cruise Parking</p>

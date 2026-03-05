@@ -1,11 +1,18 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { MapPin, Car, Bus } from 'lucide-react';
 import { Button } from '../../../components/client/Button';
 
 export const Location: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="Our Location | Simple Cruise Parking Southampton"
+        description="Find Simple Cruise Parking near Southampton docks. Easy access from the M27 and M3, just minutes from all cruise terminals."
+        canonicalPath="/location"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Location', path: '/location' }]}
+      />
       <div className="bg-brand-dark text-white py-20 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Find Us</h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">

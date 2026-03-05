@@ -33,6 +33,7 @@
     "react": "^19.2.0",
     "react-day-picker": "^9.13.2",
     "react-dom": "^19.2.0",
+    "react-helmet-async": "^3.0.0",
     "react-hook-form": "^7.71.2",
     "react-resizable-panels": "^4",
     "react-router-dom": "^7.9.6",

@@ -13,7 +13,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ variant = 'color', classNa
 
   return (
     <div className={`flex items-center ${className}`}>
-      <img src={src} alt="Simple Cruise logo" className="h-[50px] w-auto cursor-pointer" />
+      <img src={src} alt="Simple Cruise Parking Southampton logo" width={200} height={50} className="h-[50px] w-auto cursor-pointer" />
     </div>
   );
 };

@@ -2,12 +2,19 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft } from 'lucide-react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 
 export const NotFound: React.FC = () => {
   const navigate = useNavigate();
 
   return (
     <Layout>
+      <SEO
+        title="Page Not Found | Simple Cruise Parking Southampton"
+        description="The page you are looking for could not be found. Return to Simple Cruise Parking Southampton homepage."
+        canonicalPath="/404"
+        noindex
+      />
       <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
         <div className="max-w-lg w-full text-center">
           {/* 404 Text */}

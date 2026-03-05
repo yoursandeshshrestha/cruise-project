@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Input } from '../../../components/client/Input';
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle, Loader2 } from 'lucide-react';
 import { useContactStore } from '../../../stores/contactStore';
@@ -55,6 +56,12 @@ export const Contact: React.FC = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Contact Us | Simple Cruise Parking Southampton"
+        description="Get in touch with Simple Cruise Parking. Call us, email us or send a message. We are happy to help with any questions about Southampton cruise parking."
+        canonicalPath="/contact"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }]}
+      />
       <div className="bg-brand-dark text-white py-16 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">

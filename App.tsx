@@ -1,10 +1,8 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Home } from './pages/client/Home';
 import { BookingFlow } from './pages/client/BookingFlow';
 import { BookingSuccess } from './pages/client/BookingSuccess';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { AdminLogin } from './pages/admin/Login';
 import { HowItWorks } from './pages/client/HowItWorks';
 import { Prices } from './pages/client/Prices';
 import { Services } from './pages/client/Services';
@@ -20,27 +18,36 @@ import { Reviews } from './pages/client/Reviews';
 import { ScrollToTop } from './components/client/ScrollToTop';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
 import { NotFound } from './pages/client/NotFound';
-import { CruiseLines } from './pages/admin/CruiseLines';
-import { Terminals } from './pages/admin/Terminals';
-import { AddOns } from './pages/admin/AddOns';
-import { PromoCodes } from './pages/admin/PromoCodes';
-import { Pricing } from './pages/admin/Pricing';
-import { Bookings } from './pages/admin/Bookings';
-import { BookingDetail } from './pages/admin/Bookings/Detail';
-import { Payments } from './pages/admin/Payments';
-import { Arrivals } from './pages/admin/Arrivals';
-import { Analytics } from './pages/admin/Analytics';
-import { Settings } from './pages/admin/Settings';
-import { Account } from './pages/admin/Account';
-import { AdminUsers } from './pages/admin/AdminUsers';
-import { ContactSubmissions } from './pages/admin/ContactSubmissions';
-import { BookingCalendar } from './pages/admin/BookingCalendar';
-import { CapacityCalendar } from './pages/admin/CapacityCalendar';
 import { Toaster } from './components/admin/ui/sonner';
 import { useAuthInit } from './hooks/useAuthInit';
 import { MaintenancePage } from './components/client/MaintenancePage';
 import { useSystemSettingsStore } from './stores/systemSettingsStore';
 import { useAuthStore } from './stores/authStore';
+
+const AdminLogin = React.lazy(() => import('./pages/admin/Login').then(m => ({ default: m.AdminLogin })));
+const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const CruiseLines = React.lazy(() => import('./pages/admin/CruiseLines').then(m => ({ default: m.CruiseLines })));
+const Terminals = React.lazy(() => import('./pages/admin/Terminals').then(m => ({ default: m.Terminals })));
+const AddOns = React.lazy(() => import('./pages/admin/AddOns').then(m => ({ default: m.AddOns })));
+const PromoCodes = React.lazy(() => import('./pages/admin/PromoCodes').then(m => ({ default: m.PromoCodes })));
+const Pricing = React.lazy(() => import('./pages/admin/Pricing').then(m => ({ default: m.Pricing })));
+const Bookings = React.lazy(() => import('./pages/admin/Bookings').then(m => ({ default: m.Bookings })));
+const BookingDetail = React.lazy(() => import('./pages/admin/Bookings/Detail').then(m => ({ default: m.BookingDetail })));
+const Payments = React.lazy(() => import('./pages/admin/Payments').then(m => ({ default: m.Payments })));
+const Arrivals = React.lazy(() => import('./pages/admin/Arrivals').then(m => ({ default: m.Arrivals })));
+const Analytics = React.lazy(() => import('./pages/admin/Analytics').then(m => ({ default: m.Analytics })));
+const Settings = React.lazy(() => import('./pages/admin/Settings').then(m => ({ default: m.Settings })));
+const Account = React.lazy(() => import('./pages/admin/Account').then(m => ({ default: m.Account })));
+const AdminUsers = React.lazy(() => import('./pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
+const ContactSubmissions = React.lazy(() => import('./pages/admin/ContactSubmissions').then(m => ({ default: m.ContactSubmissions })));
+const BookingCalendar = React.lazy(() => import('./pages/admin/BookingCalendar').then(m => ({ default: m.BookingCalendar })));
+const CapacityCalendar = React.lazy(() => import('./pages/admin/CapacityCalendar').then(m => ({ default: m.CapacityCalendar })));
+
+const AdminLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+  </div>
+);
 
 const MaintenanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const getSetting = useSystemSettingsStore((state) => state.getSetting);
@@ -93,145 +100,26 @@ const App: React.FC = () => {
         <Route path="/cookies" element={<MaintenanceWrapper><Cookies /></MaintenanceWrapper>} />
         <Route path="/parking/:id" element={<MaintenanceWrapper><Terminal /></MaintenanceWrapper>} />
 
-        {/* Admin Routes */}
+        {/* Admin Routes (lazy-loaded for performance) */}
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/analytics"
-          element={
-            <ProtectedRoute>
-              <Analytics />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/cruise-lines"
-          element={
-            <ProtectedRoute>
-              <CruiseLines />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/terminals"
-          element={
-            <ProtectedRoute>
-              <Terminals />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/add-ons"
-          element={
-            <ProtectedRoute>
-              <AddOns />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/promo-codes"
-          element={
-            <ProtectedRoute>
-              <PromoCodes />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/pricing"
-          element={
-            <ProtectedRoute>
-              <Pricing />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/bookings/:id"
-          element={
-            <ProtectedRoute>
-              <BookingDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/bookings"
-          element={
-            <ProtectedRoute>
-              <Bookings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/payments"
-          element={
-            <ProtectedRoute>
-              <Payments />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/booking-calendar"
-          element={
-            <ProtectedRoute>
-              <BookingCalendar />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/capacity-calendar"
-          element={
-            <ProtectedRoute>
-              <CapacityCalendar />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/arrivals"
-          element={
-            <ProtectedRoute>
-              <Arrivals />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/configuration"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/account"
-          element={
-            <ProtectedRoute>
-              <Account />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute>
-              <AdminUsers />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/contact-submissions"
-          element={
-            <ProtectedRoute>
-              <ContactSubmissions />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/login" element={<Suspense fallback={<AdminLoadingFallback />}><AdminLogin /></Suspense>} />
+        <Route path="/admin/dashboard" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><AdminDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Analytics /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/cruise-lines" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><CruiseLines /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/terminals" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Terminals /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/add-ons" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><AddOns /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/promo-codes" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><PromoCodes /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/pricing" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Pricing /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/bookings/:id" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><BookingDetail /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/bookings" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Bookings /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/payments" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Payments /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/booking-calendar" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><BookingCalendar /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/capacity-calendar" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><CapacityCalendar /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/arrivals" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Arrivals /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/configuration" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Settings /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/account" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><Account /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><AdminUsers /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/contact-submissions" element={<ProtectedRoute><Suspense fallback={<AdminLoadingFallback />}><ContactSubmissions /></Suspense></ProtectedRoute>} />
 
         {/* 404 Not Found - Catch all */}
         <Route path="*" element={<MaintenanceWrapper><NotFound /></MaintenanceWrapper>} />

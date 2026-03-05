@@ -1,9 +1,16 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 
 export const Terms: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="Terms and Conditions | Simple Cruise Parking Southampton"
+        description="Read the terms and conditions for Simple Cruise Parking Southampton. Our booking terms, cancellation policy and service agreements."
+        canonicalPath="/terms"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Terms and Conditions', path: '/terms' }]}
+      />
       <div className="max-w-3xl mx-auto px-4 py-16 text-brand-dark">
         <h1 className="text-3xl font-bold mb-2">Terms and Conditions</h1>
         <p className="text-sm text-gray-500 mb-8">Simple Cruise Parking</p>

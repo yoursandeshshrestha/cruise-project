@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Button } from '../../../components/client/Button';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
 import { formatDateTime } from '../../../lib/dateUtils';
@@ -54,6 +55,13 @@ export function BookingSuccess() {
   if (loading) {
     return (
       <Layout>
+        <SEO
+          title="Booking Confirmed | Simple Cruise Parking Southampton"
+          description="Your cruise parking booking has been confirmed. Thank you for choosing Simple Cruise Parking Southampton."
+          canonicalPath="/booking-success"
+          breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Booking Confirmed', path: '/booking-success' }]}
+          noindex
+        />
         <div className="min-h-screen flex items-center justify-center bg-white">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
@@ -67,6 +75,13 @@ export function BookingSuccess() {
   if (error || !booking) {
     return (
       <Layout>
+        <SEO
+          title="Booking Confirmed | Simple Cruise Parking Southampton"
+          description="Your cruise parking booking has been confirmed. Thank you for choosing Simple Cruise Parking Southampton."
+          canonicalPath="/booking-success"
+          breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Booking Confirmed', path: '/booking-success' }]}
+          noindex
+        />
         <div className="min-h-screen flex items-center justify-center bg-white">
           <div className="max-w-md w-full bg-white p-8 rounded-lg border border-gray-200 text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -83,6 +98,13 @@ export function BookingSuccess() {
 
   return (
     <Layout>
+      <SEO
+        title="Booking Confirmed | Simple Cruise Parking Southampton"
+        description="Your cruise parking booking has been confirmed. Thank you for choosing Simple Cruise Parking Southampton."
+        canonicalPath="/booking-success"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Booking Confirmed', path: '/booking-success' }]}
+        noindex
+      />
       <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-2xl mx-auto">
           {/* Success Card */}

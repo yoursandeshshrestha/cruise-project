@@ -14,8 +14,16 @@ export const Footer: React.FC = () => {
     fetchActiveTerminals();
   }, [fetchActiveTerminals]);
 
+  const TERMINAL_SLUG_MAP: Record<string, string> = {
+    'Ocean Cruise Terminal': 'ocean-terminal',
+    'Mayflower Cruise Terminal': 'mayflower-terminal',
+    'City Cruise Terminal': 'city-cruise-terminal',
+    'QEII Terminal': 'qeii-terminal',
+    'Horizon Cruise Terminal': 'horizon-terminal',
+  };
+
   const getTerminalSlug = (terminalName: string) => {
-    return terminalName.toLowerCase().replace(/\s+/g, '-');
+    return TERMINAL_SLUG_MAP[terminalName] || terminalName.toLowerCase().replace(/\s+/g, '-');
   };
 
   return (
@@ -91,7 +99,6 @@ export const Footer: React.FC = () => {
             <Link to="/privacy" className="cursor-pointer hover:text-white">Privacy Policy</Link>
             <Link to="/terms" className="cursor-pointer hover:text-white">Terms & Conditions</Link>
             <Link to="/cookies" className="cursor-pointer hover:text-white">Cookie Policy</Link>
-            <Link to="/admin" className="cursor-pointer hover:text-white">Admin</Link>
           </div>
         </div>
       </div>

@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Layout } from '../../../components/client/Layout';
 import { BookingWidget } from '../../../components/client/BookingWidget';
 import { Button } from '../../../components/client/Button';
-import { Navigation, Clock, Shield } from 'lucide-react';
+import { SEO, SITE_URL } from '../../../components/client/SEO';
+import { Navigation, Clock, Shield, Anchor } from 'lucide-react';
 
 const TERMINAL_DATA: Record<string, { name: string; description: string; directions: string; mapQuery: string }> = {
   'ocean-terminal': {
@@ -38,6 +39,30 @@ const TERMINAL_DATA: Record<string, { name: string; description: string; directi
   }
 };
 
+const getTerminalSchema = (slug: string, terminal: { name: string; description: string }) => ({
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: `Parking Near ${terminal.name} Southampton`,
+  description: terminal.description,
+  url: `${SITE_URL}/parking/${slug}`,
+  provider: {
+    '@type': 'LocalBusiness',
+    name: 'Simple Cruise Parking',
+    url: SITE_URL,
+  },
+  areaServed: {
+    '@type': 'Place',
+    name: `${terminal.name}, Southampton`,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Southampton',
+      addressRegion: 'Hampshire',
+      addressCountry: 'GB',
+    },
+  },
+  serviceType: 'Cruise Terminal Parking',
+});
+
 export const Terminal: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const terminal = id && TERMINAL_DATA[id] ? TERMINAL_DATA[id] : null;
@@ -45,6 +70,12 @@ export const Terminal: React.FC = () => {
   if (!terminal) {
     return (
       <Layout>
+        <SEO
+          title="Terminal Not Found | Simple Cruise Parking Southampton"
+          description="The requested cruise terminal page could not be found."
+          canonicalPath="/parking"
+          noindex
+        />
         <div className="py-20 text-center">
           <h1 className="text-2xl font-bold">Terminal Not Found</h1>
           <Link to="/" className="text-primary underline mt-4 block">Return Home</Link>
@@ -53,8 +84,21 @@ export const Terminal: React.FC = () => {
     );
   }
 
+  const otherTerminals = Object.entries(TERMINAL_DATA).filter(([slug]) => slug !== id);
+
   return (
     <Layout>
+      <SEO
+        title={`Parking Near ${terminal.name} | Simple Cruise Parking Southampton`}
+        description={`${terminal.description} Secure off-site parking with fast shuttle transfers. Book Southampton cruise parking today.`}
+        canonicalPath={`/parking/${id}`}
+        schemaMarkup={getTerminalSchema(id!, terminal)}
+        breadcrumbs={[
+          { name: 'Home', path: '/' },
+          { name: `${terminal.name} Parking`, path: `/parking/${id}` },
+        ]}
+      />
+
       {/* Hero */}
       <div className="bg-brand-dark text-white pt-16 pb-32 relative">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -132,9 +176,38 @@ export const Terminal: React.FC = () => {
         {/* CTA */}
         <div className="mt-16 text-center">
             <h2 className="text-2xl font-bold text-brand-dark mb-6">Book your {terminal.name} parking today</h2>
-            <Link to="/book">
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link to="/book">
                 <Button className="px-8">Get a Quote</Button>
-            </Link>
+              </Link>
+              <Link to="/">
+                <Button variant="secondary" className="px-8">Southampton Cruise Parking</Button>
+              </Link>
+            </div>
+        </div>
+
+        {/* Other Terminals */}
+        <div className="mt-20">
+          <h2 className="text-2xl font-bold text-brand-dark mb-6 text-center">Parking for Other Southampton Cruise Terminals</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {otherTerminals.map(([slug, t]) => (
+              <Link
+                key={slug}
+                to={`/parking/${slug}`}
+                className="flex items-center gap-4 p-4 bg-neutral-light rounded-xl border border-gray-100 hover:shadow-medium hover:border-primary/30 transition-all group"
+              >
+                <div className="bg-blue-50 p-3 rounded-lg text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                  <Anchor size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-brand-dark group-hover:text-primary transition-colors">
+                    {t.name} Parking
+                  </h3>
+                  <p className="text-sm text-gray-500">Parking near {t.name}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </Layout>

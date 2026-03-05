@@ -1,9 +1,16 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 
 export const Privacy: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="Privacy Policy | Simple Cruise Parking Southampton"
+        description="Simple Cruise Parking privacy policy. Learn how we collect, use and protect your personal data when you use our website and services."
+        canonicalPath="/privacy"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Privacy Policy', path: '/privacy' }]}
+      />
       <div className="max-w-3xl mx-auto px-4 py-16 text-brand-dark">
         <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
         <p className="text-sm text-gray-500 mb-8">Simple Cruise Parking</p>

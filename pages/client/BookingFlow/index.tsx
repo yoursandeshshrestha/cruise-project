@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Button } from '../../../components/client/Button';
 import { BookingState, BookingStep } from '../../../types';
 import { useCruiseLinesStore } from '../../../stores/cruiseLinesStore';
@@ -403,6 +404,12 @@ export const BookingFlow: React.FC = () => {
     return (
       <>
       <Layout hideFooter>
+        <SEO
+          title="Book Cruise Parking | Simple Cruise Parking Southampton"
+          description="Book secure cruise parking in Southampton online. Choose your dates, select add-ons and reserve your space near the cruise terminals."
+          canonicalPath="/book"
+          breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Book Parking', path: '/book' }]}
+        />
         <div className="min-h-screen bg-neutral-light flex items-center justify-center px-4">
           <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-light text-center">
             <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -439,6 +446,12 @@ export const BookingFlow: React.FC = () => {
   return (
     <>
     <Layout hideFooter>
+      <SEO
+        title="Book Cruise Parking | Simple Cruise Parking Southampton"
+        description="Book secure cruise parking in Southampton online. Choose your dates, select add-ons and reserve your space near the cruise terminals."
+        canonicalPath="/book"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Book Parking', path: '/book' }]}
+      />
       <div className="min-h-screen bg-neutral-light pb-20">
         <LoadingOverlay isVisible={isProcessing} />
 

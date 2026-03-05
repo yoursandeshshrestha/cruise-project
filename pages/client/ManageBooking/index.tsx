@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Button } from '../../../components/client/Button';
 import { Input } from '../../../components/client/Input';
 import { Select } from '../../../components/client/Select';
@@ -1002,6 +1003,12 @@ export const ManageBooking: React.FC = () => {
 
     return (
         <Layout>
+            <SEO
+                title="Manage Your Booking | Simple Cruise Parking Southampton"
+                description="View, modify or cancel your Simple Cruise Parking booking. Enter your booking reference to manage your Southampton cruise parking reservation."
+                canonicalPath="/manage-booking"
+                breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Manage Booking', path: '/manage-booking' }]}
+            />
             <div className="bg-neutral-light pb-12 relative">
                 {/* Header Strip */}
                 <div className="bg-white border-b border-gray-200 sticky top-20 z-30">
@@ -2071,6 +2078,12 @@ export const ManageBooking: React.FC = () => {
   // Login UI (Fallback for idle/loading/error states)
   return (
     <Layout>
+      <SEO
+        title="Manage Your Booking | Simple Cruise Parking Southampton"
+        description="View, modify or cancel your Simple Cruise Parking booking. Enter your booking reference to manage your Southampton cruise parking reservation."
+        canonicalPath="/manage-booking"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Manage Booking', path: '/manage-booking' }]}
+      />
       <div className="bg-neutral-light py-12 flex items-center justify-center px-4">
         <div className="bg-white p-6 rounded-lg border border-gray-200 w-full max-w-lg">
             <div className="mb-6">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Accordion } from '../../../components/client/Accordion';
 import { Link } from 'react-router-dom';
 
@@ -39,8 +40,31 @@ export const FAQs: React.FC = () => {
     }
   ];
 
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.title,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.content,
+      },
+    })),
+  };
+
   return (
     <Layout>
+      <SEO
+        title="FAQs | Simple Cruise Parking Southampton"
+        description="Frequently asked questions about Simple Cruise Parking Southampton. Find answers about parking security, shuttle transfers, keys, and booking."
+        canonicalPath="/faqs"
+        schemaMarkup={faqSchema}
+        breadcrumbs={[
+          { name: 'Home', path: '/' },
+          { name: 'FAQs', path: '/faqs' },
+        ]}
+      />
        <div className="bg-neutral-light py-16">
         <div className="max-w-3xl mx-auto px-4 text-center mb-12">
             <h1 className="text-4xl font-bold text-brand-dark mb-4">Frequently Asked Questions</h1>

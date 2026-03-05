@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO } from '../../../components/client/SEO';
 import { Button } from '../../../components/client/Button';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, Bus, Zap, Droplets, Sparkles, Clock, Key, Accessibility } from 'lucide-react';
@@ -30,6 +31,12 @@ export const Services: React.FC = () => {
   };
   return (
     <Layout>
+      <SEO
+        title="Cruise Parking Services | Simple Cruise Parking Southampton"
+        description="Our secure Southampton cruise parking services include free shuttle transfers, CCTV-monitored parking, EV charging, car wash and more."
+        canonicalPath="/services"
+        breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Services', path: '/services' }]}
+      />
       {/* Hero Section */}
       <div className="bg-brand-dark text-white py-20 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10">

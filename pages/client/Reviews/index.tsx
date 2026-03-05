@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layout } from '../../../components/client/Layout';
+import { SEO, SITE_URL } from '../../../components/client/SEO';
 import { Star, ThumbsUp } from 'lucide-react';
 import { Button } from '../../../components/client/Button';
 import { Link } from 'react-router-dom';
@@ -55,9 +56,44 @@ const REVIEWS_DATA = [
     }
 ];
 
+const reviewSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Simple Cruise Parking',
+  url: SITE_URL,
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    bestRating: '5',
+    ratingCount: '200',
+    reviewCount: '200',
+  },
+  review: REVIEWS_DATA.map((r) => ({
+    '@type': 'Review',
+    author: { '@type': 'Person', name: r.name },
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: String(r.rating),
+      bestRating: '5',
+    },
+    name: r.title,
+    reviewBody: r.text,
+  })),
+};
+
 export const Reviews: React.FC = () => {
   return (
     <Layout>
+      <SEO
+        title="Customer Reviews | Simple Cruise Parking Southampton"
+        description="Read genuine customer reviews of Simple Cruise Parking Southampton. See why hundreds of cruise passengers rate us 5 stars."
+        canonicalPath="/reviews"
+        schemaMarkup={reviewSchema}
+        breadcrumbs={[
+          { name: 'Home', path: '/' },
+          { name: 'Customer Reviews', path: '/reviews' },
+        ]}
+      />
       <div className="bg-neutral-light py-16">
         <div className="max-w-7xl mx-auto px-4">
             
