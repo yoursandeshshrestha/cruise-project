@@ -76,6 +76,7 @@ FUNCTIONS=(
     "cleanup-expired-bookings"
     "cancel-booking"
     "send-cancellation-email"
+    "chatbot"
 )
 
 # Track success/failure

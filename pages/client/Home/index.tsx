@@ -3,6 +3,7 @@ import { Layout } from '../../../components/client/Layout';
 import { BookingWidget } from '../../../components/client/BookingWidget';
 import { Button } from '../../../components/client/Button';
 import { SEO, SITE_URL } from '../../../components/client/SEO';
+import { Chatbot } from '../../../components/client/Chatbot';
 import { Shield, Clock, Smile, MapPin, Star, Truck, Anchor } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -267,6 +268,9 @@ export const Home: React.FC = () => {
           </div>
         </div>
        </section>
+
+       {/* Chatbot */}
+       <Chatbot />
     </Layout>
   );
 };

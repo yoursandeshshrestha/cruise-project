@@ -55,6 +55,10 @@ set_secret "MAILGUN_API_KEY" "$MAILGUN_API_KEY"
 set_secret "MAILGUN_DOMAIN" "$MAILGUN_DOMAIN"
 set_secret "MAILGUN_FROM_EMAIL" "$MAILGUN_FROM_EMAIL"
 
+# Set Grok (X.AI) secrets
+echo "🤖 Setting Grok (X.AI) secrets..."
+set_secret "XAI_API_KEY" "$XAI_API_KEY"
+
 echo ""
 echo "================================================"
 echo "✅ Secrets deployment complete!"
