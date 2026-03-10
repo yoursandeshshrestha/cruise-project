@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Home } from './pages/client/Home';
 import { BookingFlow } from './pages/client/BookingFlow';
 import { BookingSuccess } from './pages/client/BookingSuccess';
@@ -23,6 +23,7 @@ import { useAuthInit } from './hooks/useAuthInit';
 import { MaintenancePage } from './components/client/MaintenancePage';
 import { useSystemSettingsStore } from './stores/systemSettingsStore';
 import { useAuthStore } from './stores/authStore';
+import { Chatbot } from './components/client/Chatbot';
 
 const AdminLogin = React.lazy(() => import('./pages/admin/Login').then(m => ({ default: m.AdminLogin })));
 const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -64,6 +65,17 @@ const MaintenanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
   return <>{children}</>;
 };
 
+const ChatbotWrapper: React.FC = () => {
+  const location = useLocation();
+
+  // Don't show chatbot on admin routes
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
+  return <Chatbot />;
+};
+
 const App: React.FC = () => {
   // Initialize auth and set up global auth state listener
   useAuthInit();
@@ -82,6 +94,7 @@ const App: React.FC = () => {
     <Router>
       <ScrollToTop />
       <Toaster />
+      <ChatbotWrapper />
       <Routes>
         {/* Client Routes - wrapped with maintenance check */}
         <Route path="/" element={<MaintenanceWrapper><Home /></MaintenanceWrapper>} />
